@@ -9,7 +9,7 @@
  * на боевом домене — честно сообщает, что заявка не отправлена, и показывает телефон.
  */
 window.APP_CONFIG = Object.freeze({
-  FORM_ENDPOINT: '',
+  FORM_ENDPOINT: 'https://alex12334567.app.n8n.cloud/webhook/shesterenka-lead',
   PHONE_DISPLAY: '+7 (495) 000-00-00',
   REQUEST_TIMEOUT_MS: 10000,
   RESEND_DELAY_MS: 60000,
