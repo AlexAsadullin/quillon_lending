@@ -294,6 +294,7 @@
         name: form.elements.name.value.trim(),
         phone: `+7${phoneDigits(form.elements.phone.value)}`,
         car: form.elements.car.value.trim(),
+        problem: form.elements.problem.value.trim(),
         consent: true,
         page: window.location.href,
         sentAt: new Date().toISOString(),

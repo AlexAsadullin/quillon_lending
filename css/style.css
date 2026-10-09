@@ -966,6 +966,12 @@ address {
   transition: border-color var(--t-fast);
 }
 
+.field__input--area {
+  min-height: 84px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
 .field__input::placeholder {
   color: var(--c-muted-on-paper);
   opacity: 0.7;

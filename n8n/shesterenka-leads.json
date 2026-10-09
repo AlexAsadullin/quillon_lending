@@ -1,0 +1,259 @@
+{
+  "name": "Шестерёнка: заявки с сайта → Google Таблица",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shesterenka-lead",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://quillonlending.vercel.app"
+        }
+      },
+      "id": "9902bfd0-d636-481c-ad6a-f1f2a87bd721",
+      "name": "Заявка с сайта",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "61c9e87f-d4af-4324-bfe0-c57b5c41bb9b"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Серверная проверка заявки: данным из браузера не доверяем,\n// клиентскую валидацию можно обойти прямым запросом к вебхуку.\nconst body = $input.first().json.body ?? {};\n\n// Убираем управляющие символы и лишние пробелы, ограничиваем длину\nconst clean = (value, max) => String(value ?? '')\n  .replace(/[\\u0000-\\u001F\\u007F]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, max);\n\nconst lead = {\n  name: clean(body.name, 60),\n  phone: clean(body.phone, 20).replace(/[^\\d+]/g, ''),\n  car: clean(body.car, 60),\n  problem: clean(body.problem, 500),\n};\n\nconst errors = [];\nif (lead.name.length < 2 || !/^[\\p{L}\\s'-]+$/u.test(lead.name)) errors.push('name');\nif (!/^\\+7\\d{10}$/.test(lead.phone)) errors.push('phone');\nif (body.consent !== true) errors.push('consent');\n\nreturn [{\n  json: {\n    ok: errors.length === 0,\n    error: errors.length ? `Некорректные поля: ${errors.join(', ')}` : '',\n    ...lead,\n    // Время сервера, а не браузера: часы клиента могут врать\n    receivedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),\n    status: 'Новая',\n  },\n}];\n"
+      },
+      "id": "191c0089-0724-43dc-84e1-65ff0d4b3080",
+      "name": "Проверка и очистка",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "67338921-0939-4918-b24b-a87525612408",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c6ba51ed-c93a-4677-ab81-d8a6cd525bbd",
+      "name": "Данные корректны?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/ВСТАВЬТЕ_ID_ТАБЛИЦЫ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Заявки",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Имя": "={{ $json.name }}",
+            "Телефон": "={{ $json.phone }}",
+            "Марка": "={{ $json.car }}",
+            "Что случилось": "={{ $json.problem }}",
+            "Время": "={{ $json.receivedAt }}",
+            "Статус": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Имя",
+              "displayName": "Имя",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Телефон",
+              "displayName": "Телефон",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Марка",
+              "displayName": "Марка",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Что случилось",
+              "displayName": "Что случилось",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Время",
+              "displayName": "Время",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Статус",
+              "displayName": "Статус",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "fe37aeec-22c1-479b-9e20-99ff555ec15c",
+      "name": "Строка в таблицу",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": true\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "3d90a94d-e6ae-4a32-8ba7-150bec9ca9b7",
+      "name": "Ответ: принято",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: $json.error }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "0bd95ce2-bdb8-4ce7-8873-1de0344295ec",
+      "name": "Ответ: ошибка",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Заявка с сайта": {
+      "main": [
+        [
+          {
+            "node": "Проверка и очистка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Проверка и очистка": {
+      "main": [
+        [
+          {
+            "node": "Данные корректны?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Данные корректны?": {
+      "main": [
+        [
+          {
+            "node": "Строка в таблицу",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ответ: ошибка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Строка в таблицу": {
+      "main": [
+        [
+          {
+            "node": "Ответ: принято",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
