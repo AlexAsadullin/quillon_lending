@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'self'; object-src 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Шестерёнка — автосервис в Москве</title>
+  <meta name="description" content="Автосервис «Шестерёнка» в Москве: диагностика, ТО, ремонт двигателя, ходовой и электрики. Фиксированная цена в заказ-наряде и гарантия до 12 месяцев.">
+  <meta name="theme-color" content="#14161b">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Шестерёнка — автосервис в Москве">
+  <meta property="og:description" content="Чиним то, что крутится. Диагностика, ТО и ремонт с фиксированной ценой.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;700&family=Unbounded:wght@500;700;900&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/config.js" defer></script>
+  <script src="js/main.js" defer></script>
+</head>
+<body>
+  <!-- Спрайт: одна шестерёнка на весь сайт, используется через <use> -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="gear" viewBox="-52 -52 104 104">
+      <path fill-rule="evenodd" d="M40.00 0.00 L49.78 4.71 L48.80 10.91 L38.04 12.36 L34.64 20.00 L40.76 28.96 L36.80 33.84 L26.77 29.73 L20.00 34.64 L20.81 45.46 L14.95 47.71 L8.32 39.13 L0.00 40.00 L-4.71 49.78 L-10.91 48.80 L-12.36 38.04 L-20.00 34.64 L-28.96 40.76 L-33.84 36.80 L-29.73 26.77 L-34.64 20.00 L-45.46 20.81 L-47.71 14.95 L-39.13 8.32 L-40.00 0.00 L-49.78 -4.71 L-48.80 -10.91 L-38.04 -12.36 L-34.64 -20.00 L-40.76 -28.96 L-36.80 -33.84 L-26.77 -29.73 L-20.00 -34.64 L-20.81 -45.46 L-14.95 -47.71 L-8.32 -39.13 L-0.00 -40.00 L4.71 -49.78 L10.91 -48.80 L12.36 -38.04 L20.00 -34.64 L28.96 -40.76 L33.84 -36.80 L29.73 -26.77 L34.64 -20.00 L45.46 -20.81 L47.71 -14.95 L39.13 -8.32Z M14 0 A14 14 0 1 0 -14 0 A14 14 0 1 0 14 0Z"/>
+    </symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
+
+  <header class="header" data-js="header">
+    <div class="header__inner container">
+      <a class="logo" href="#top" aria-label="Шестерёнка — на главную">
+        <svg class="logo__gear" aria-hidden="true"><use href="#gear"/></svg>
+        <span class="logo__text">Шестерёнка</span>
+      </a>
+
+      <button class="burger" type="button" aria-expanded="false" aria-controls="site-nav" data-js="burger">
+        <span class="burger__line"></span>
+        <span class="visually-hidden">Меню</span>
+      </button>
+
+      <nav class="nav" id="site-nav" aria-label="Основная навигация" data-js="nav">
+        <a class="nav__link" href="#services">Услуги</a>
+        <a class="nav__link" href="#process">Как работаем</a>
+        <a class="nav__link" href="#guarantee">Гарантия</a>
+        <a class="nav__link" href="#contacts">Контакты</a>
+        <a class="nav__phone" href="tel:+74950000000">+7&nbsp;(495)&nbsp;000&#8209;00&#8209;00</a>
+      </nav>
+
+      <a class="btn btn--small header__cta" href="#callback">Заказать звонок</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ПЕРВЫЙ ЭКРАН -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero__grid container">
+        <p class="hero__sheet mono">Автосервис в Москве</p>
+
+        <h1 class="hero__title" id="hero-title">
+          Чиним всё,<br>
+          что <span class="hero__accent">крутится</span>
+        </h1>
+
+        <p class="hero__lead">
+          Диагностика, ТО и ремонт легковых автомобилей. Цену фиксируем в заказ-наряде
+          до начала работ — и не меняем её без вашего согласия.
+        </p>
+
+        <div class="hero__actions">
+          <a class="btn" href="#callback">Заказать звонок</a>
+          <a class="btn btn--ghost" href="#services">Смотреть услуги</a>
+        </div>
+
+        <dl class="specs">
+          <div class="specs__item">
+            <dt class="specs__label mono">Гарантия до</dt>
+            <dd class="specs__value">12 <small>мес</small></dd>
+          </div>
+          <div class="specs__item">
+            <dt class="specs__label mono">Постов</dt>
+            <dd class="specs__value">8</dd>
+          </div>
+          <div class="specs__item">
+            <dt class="specs__label mono">Перезвоним за</dt>
+            <dd class="specs__value">15 <small>мин</small></dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Главная шестерёнка: вращается от прокрутки -->
+      <div class="hero__machine" aria-hidden="true">
+        <svg class="hero__gear hero__gear--big" data-js="scroll-gear" data-speed="0.12"><use href="#gear"/></svg>
+        <svg class="hero__gear hero__gear--small" data-js="scroll-gear" data-speed="-0.35"><use href="#gear"/></svg>
+        <span class="dim dim--hero mono">Ø 520</span>
+      </div>
+    </section>
+
+    <!-- БЕГУЩАЯ СТРОКА -->
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker__track">
+        <span>Двигатель</span><span>✦</span><span>Ходовая</span><span>✦</span><span>КПП</span><span>✦</span>
+        <span>Тормоза</span><span>✦</span><span>Электрика</span><span>✦</span><span>Кондиционер</span><span>✦</span>
+        <span>Двигатель</span><span>✦</span><span>Ходовая</span><span>✦</span><span>КПП</span><span>✦</span>
+        <span>Тормоза</span><span>✦</span><span>Электрика</span><span>✦</span><span>Кондиционер</span><span>✦</span>
+      </div>
+    </div>
+
+    <!-- УСЛУГИ -->
+    <section class="section section--paper" id="services" aria-labelledby="services-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">Спецификация работ</p>
+          <h2 class="section__title" id="services-title">Что чиним</h2>
+        </header>
+
+        <ol class="parts">
+          <li class="part" data-js="reveal">
+            <h3 class="part__title">Компьютерная диагностика</h3>
+            <p class="part__text">Считываем ошибки всех блоков, проверяем датчики, выдаём отчёт на руки.</p>
+            <p class="part__price mono">от 1 500 ₽</p>
+          </li>
+          <li class="part" data-js="reveal">
+            <h3 class="part__title">Плановое ТО</h3>
+            <p class="part__text">Масло, фильтры, жидкости по регламенту производителя. Гарантия дилера сохраняется.</p>
+            <p class="part__price mono">от 3 900 ₽</p>
+          </li>
+          <li class="part" data-js="reveal">
+            <h3 class="part__title">Ремонт двигателя</h3>
+            <p class="part__text">ГРМ, прокладки, сальники, капитальный ремонт. Дефектовка с фото до разборки.</p>
+            <p class="part__price mono">от 7 000 ₽</p>
+          </li>
+          <li class="part" data-js="reveal">
+            <h3 class="part__title">Ходовая часть</h3>
+            <p class="part__text">Стойки, рычаги, сайлентблоки, ступичные подшипники. Сход-развал на 3D-стенде.</p>
+            <p class="part__price mono">от 2 500 ₽</p>
+          </li>
+          <li class="part" data-js="reveal">
+            <h3 class="part__title">Тормозная система</h3>
+            <p class="part__text">Колодки, диски, суппорты, прокачка. Проверка на тормозном стенде после работ.</p>
+            <p class="part__price mono">от 1 800 ₽</p>
+          </li>
+          <li class="part" data-js="reveal">
+            <h3 class="part__title">Автоэлектрика</h3>
+            <p class="part__text">Поиск утечек тока, проводка, стартеры, генераторы, установка оборудования.</p>
+            <p class="part__price mono">от 2 000 ₽</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- КАК РАБОТАЕМ: зацепление шестерёнок -->
+    <section class="section section--ink" id="process" aria-labelledby="process-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">Кинематическая схема</p>
+          <h2 class="section__title" id="process-title">Как это работает</h2>
+        </header>
+
+        <ol class="train">
+          <li class="train__step" data-js="reveal">
+            <svg class="train__gear" aria-hidden="true"><use href="#gear"/></svg>
+            <span class="train__num mono">01</span>
+            <h3 class="train__title">Заявка</h3>
+            <p class="train__text">Оставляете номер — мастер-приёмщик перезванивает и подбирает время.</p>
+          </li>
+          <li class="train__step" data-js="reveal">
+            <svg class="train__gear" aria-hidden="true"><use href="#gear"/></svg>
+            <span class="train__num mono">02</span>
+            <h3 class="train__title">Диагностика</h3>
+            <p class="train__text">Смотрим машину при вас. Показываем проблему, а не рассказываем о ней.</p>
+          </li>
+          <li class="train__step" data-js="reveal">
+            <svg class="train__gear" aria-hidden="true"><use href="#gear"/></svg>
+            <span class="train__num mono">03</span>
+            <h3 class="train__title">Заказ-наряд</h3>
+            <p class="train__text">Фиксируем список работ и цену. Любые доп. работы — только после звонка вам.</p>
+          </li>
+          <li class="train__step" data-js="reveal">
+            <svg class="train__gear" aria-hidden="true"><use href="#gear"/></svg>
+            <span class="train__num mono">04</span>
+            <h3 class="train__title">Выдача</h3>
+            <p class="train__text">Отдаём машину, старые детали и гарантийный талон.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ГАРАНТИЯ: блок-чертёж с размерными линиями -->
+    <section class="section section--paper" id="guarantee" aria-labelledby="guarantee-title">
+      <div class="container blueprint">
+        <header class="section__head">
+          <p class="section__sheet mono">Технические требования</p>
+          <h2 class="section__title" id="guarantee-title">Допуски, которые мы&nbsp;соблюдаем</h2>
+        </header>
+
+        <ul class="tolerances">
+          <li class="tolerance" data-js="reveal">
+            <span class="tolerance__dim mono">± 0 ₽</span>
+            <p class="tolerance__text">Отклонение итоговой цены от заказ-наряда без вашего согласия.</p>
+          </li>
+          <li class="tolerance" data-js="reveal">
+            <span class="tolerance__dim mono">12 мес</span>
+            <p class="tolerance__text">Гарантия на работы по ремонту двигателя и КПП. На остальные — от 6 месяцев.</p>
+          </li>
+          <li class="tolerance" data-js="reveal">
+            <span class="tolerance__dim mono">1:1</span>
+            <p class="tolerance__text">Возвращаем все снятые детали. Видно, что именно заменили.</p>
+          </li>
+          <li class="tolerance" data-js="reveal">
+            <span class="tolerance__dim mono">0 навязанных</span>
+            <p class="tolerance__text">Рекомендуем, но не навязываем. Решение по ремонту — всегда за вами.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ФОРМА: заказ-наряд -->
+    <section class="section section--ink" id="callback" aria-labelledby="callback-title">
+      <div class="container callback">
+        <div class="callback__intro">
+          <p class="section__sheet mono">Заявка</p>
+          <h2 class="section__title" id="callback-title">Перезвоним за&nbsp;15&nbsp;минут</h2>
+          <p class="callback__lead">
+            Оставьте номер — мастер-приёмщик уточнит, что случилось с машиной,
+            назовёт ориентировочную цену и запишет на удобное время.
+          </p>
+          <p class="callback__hours">Звонки принимаем ежедневно с 9:00 до 21:00</p>
+        </div>
+
+        <form class="ticket" action="#" method="post" novalidate data-js="callback-form">
+          <div class="ticket__head">
+            <span class="mono">Заказ-наряд</span>
+            <span class="mono" data-js="ticket-number">№ —</span>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="f-name">Как к вам обращаться</label>
+            <input class="field__input" id="f-name" name="name" type="text" autocomplete="name"
+                   maxlength="60" required aria-describedby="f-name-error">
+            <p class="field__error" id="f-name-error" data-js="error"></p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="f-phone">Телефон</label>
+            <input class="field__input" id="f-phone" name="phone" type="tel" autocomplete="tel"
+                   inputmode="tel" placeholder="+7 (___) ___-__-__" maxlength="18" required
+                   aria-describedby="f-phone-error" data-js="phone">
+            <p class="field__error" id="f-phone-error" data-js="error"></p>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="f-car">Марка и модель <span class="field__optional">— необязательно</span></label>
+            <input class="field__input" id="f-car" name="car" type="text" maxlength="60"
+                   placeholder="Например, Kia Rio 2018">
+          </div>
+
+          <!-- Ловушка для ботов: людям не видна -->
+          <div class="hp" aria-hidden="true">
+            <label for="f-website">Сайт</label>
+            <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="field field--check">
+            <input class="check" id="f-consent" name="consent" type="checkbox" required aria-describedby="f-consent-error">
+            <label class="check__label" for="f-consent">
+              Согласен на обработку персональных данных
+              в соответствии с <a href="privacy.html">политикой конфиденциальности</a>
+            </label>
+            <p class="field__error" id="f-consent-error" data-js="error"></p>
+          </div>
+
+          <button class="btn btn--wide" type="submit" data-js="submit">Жду звонка</button>
+
+          <p class="ticket__status" role="status" aria-live="polite" data-js="status"></p>
+
+          <span class="stamp" aria-hidden="true">Принято</span>
+        </form>
+      </div>
+    </section>
+
+    <!-- КОНТАКТЫ -->
+    <section class="section section--paper" id="contacts" aria-labelledby="contacts-title">
+      <div class="container contacts">
+        <header class="section__head">
+          <p class="section__sheet mono">Расположение</p>
+          <h2 class="section__title" id="contacts-title">Как нас найти</h2>
+        </header>
+
+        <address class="contacts__card">
+          <dl class="contacts__list">
+            <div class="contacts__row">
+              <dt class="mono">Адрес</dt>
+              <dd>Москва, ул. Примерная, д. 1, стр. 2</dd>
+            </div>
+            <div class="contacts__row">
+              <dt class="mono">Телефон</dt>
+              <dd><a href="tel:+74950000000">+7&nbsp;(495)&nbsp;000&#8209;00&#8209;00</a></dd>
+            </div>
+            <div class="contacts__row">
+              <dt class="mono">Режим</dt>
+              <dd>Ежедневно, 9:00–21:00</dd>
+            </div>
+          </dl>
+          <a class="btn btn--ghost-dark" href="https://yandex.ru/maps/?text=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C%20%D1%83%D0%BB.%20%D0%9F%D1%80%D0%B8%D0%BC%D0%B5%D1%80%D0%BD%D0%B0%D1%8F%2C%201"
+             target="_blank" rel="noopener noreferrer">Открыть в Яндекс Картах</a>
+        </address>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer__inner container">
+      <p class="footer__brand">
+        <svg class="footer__gear" aria-hidden="true"><use href="#gear"/></svg>
+        Шестерёнка
+      </p>
+      <p class="footer__meta">© <span data-js="year">2026</span> Автосервис «Шестерёнка», Москва</p>
+      <a class="footer__link" href="privacy.html">Политика конфиденциальности</a>
+    </div>
+  </footer>
+</body>
+</html>
