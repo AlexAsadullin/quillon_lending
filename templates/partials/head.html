@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="{{csp}}">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>{{page.title}}</title>
+  <meta name="description" content="{{page.description}}">
+  {{#if page.noindex}}<meta name="robots" content="noindex">{{/if}}
+  {{#if page.canonical}}<link rel="canonical" href="{{page.canonical}}">{{/if}}
+  <meta name="theme-color" content="#14161b">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:site_name" content="{{site.name}}">
+  <meta property="og:title" content="{{page.title}}">
+  <meta property="og:description" content="{{page.description}}">
+  {{#if page.canonical}}<meta property="og:url" content="{{page.canonical}}">{{/if}}
+  <link rel="icon" href="{{root}}assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap">
+  <link rel="stylesheet" href="{{root}}css/style.css">
+  <script src="{{root}}js/config.js" defer></script>
+  <script src="{{root}}js/main.js" defer></script>
+  {{#if page.jsonLd}}<script type="application/ld+json">{{{page.jsonLd}}}</script>{{/if}}
+</head>

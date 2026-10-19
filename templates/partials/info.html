@@ -1,0 +1,22 @@
+        <dl class="info">
+          <div class="info__row">
+            <dt class="info__label mono">Часы работы</dt>
+            <dd class="info__value">{{site.hours.text}}</dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Запись</dt>
+            <dd class="info__value">{{terms.booking.rule}} {{terms.booking.walkIn}} <span class="info__source">({{terms.booking.source}})</span></dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Адрес</dt>
+            <dd class="info__value">{{site.address.full}}</dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Телефон</dt>
+            <dd class="info__value">{{{site.phoneInline}}}</dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Срочное обслуживание</dt>
+            <dd class="info__value">{{cond.p13.value}} <span class="info__source">(п.&nbsp;13)</span></dd>
+          </div>
+        </dl>

@@ -1,0 +1,23 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main id="main">
+    <section class="page-hero page-hero--full" aria-labelledby="page-title">
+      <div class="page-hero__inner container">
+        <p class="section__sheet mono">Ошибка 404</p>
+        <h1 class="page-hero__title" id="page-title">Такой детали нет на чертеже</h1>
+        <p class="page-hero__lead">Страница не найдена: возможно, ссылка устарела или в адресе опечатка.</p>
+
+        <div class="hero__actions">
+          <a class="btn" href="{{homeUrl}}">На главную</a>
+          <a class="btn btn--ghost" href="{{root}}uslugi/">Все услуги</a>
+        </div>
+      </div>
+
+      <svg class="page-hero__gear" aria-hidden="true" data-js="scroll-gear" data-speed="0.15"><use href="#gear"/></svg>
+    </section>
+  </main>
+
+{{> footer}}

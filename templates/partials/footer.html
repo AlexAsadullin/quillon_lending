@@ -1,0 +1,38 @@
+  <footer class="footer">
+    <div class="footer__inner container">
+      <div class="footer__about">
+        <p class="footer__brand">
+          <svg class="footer__gear" aria-hidden="true"><use href="#gear"/></svg>
+          {{site.name}}
+        </p>
+        <p class="footer__meta">Часы работы: {{site.hours.text}}</p>
+        <p class="footer__meta">Телефон: {{{site.phoneInline}}}</p>
+        <p class="footer__meta">{{home.footer.demo}}</p>
+      </div>
+
+      <!-- Меню подвала — из того же списка PAGES, что и шапка -->
+      <nav class="footer__nav" aria-label="Разделы сайта">
+        <p class="footer__title">Разделы</p>
+        <ul class="footer__list">
+          {{#each footerNav}}<li><a class="footer__link" href="{{it.href}}"{{{it.currentAttr}}}>{{it.label}}</a></li>
+          {{/each}}
+        </ul>
+      </nav>
+
+      <nav class="footer__nav" aria-label="Услуги">
+        <p class="footer__title">Услуги</p>
+        <ul class="footer__list">
+          {{#each serviceLinks}}<li><a class="footer__link" href="{{it.href}}"{{{it.currentAttr}}}>{{it.label}}</a></li>
+          {{/each}}
+        </ul>
+      </nav>
+    </div>
+
+    <div class="footer__bottom container">
+      <p class="footer__meta">© <span data-js="year">{{year}}</span> {{site.legalName}}, {{site.city}}</p>
+      <p class="footer__meta">{{home.footer.published}} {{published}}</p>
+      <a class="footer__link" href="{{root}}privacy.html">Политика конфиденциальности</a>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main id="main">
+{{> page-hero}}
+
+    <section class="section section--paper" aria-labelledby="guarantee-title">
+      <div class="container">
+        <h2 class="section__title" id="guarantee-title">Гарантия</h2>
+        <dl class="info info--paper">
+          <div class="info__row">
+            <dt class="info__label mono">На работы</dt>
+            <dd class="info__value">{{terms.guarantee.works}} <span class="info__source">({{terms.guarantee.source}})</span></dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">На запчасти</dt>
+            <dd class="info__value">{{terms.guarantee.parts}} <span class="info__source">({{terms.guarantee.source}})</span></dd>
+          </div>
+        </dl>
+
+        <h2 class="section__title section__title--next" id="payment-title">Оплата и выдача</h2>
+        <dl class="info info--paper">
+          <div class="info__row">
+            <dt class="info__label mono">Способы оплаты</dt>
+            <dd class="info__value">{{terms.payment.methods}} <span class="info__source">({{terms.payment.source}})</span></dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Запчасти</dt>
+            <dd class="info__value">{{cond.p12.text}} <span class="info__source">(п.&nbsp;12)</span></dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Срочное обслуживание</dt>
+            <dd class="info__value">{{cond.p13.text}} <span class="info__source">(п.&nbsp;13)</span></dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Выдача</dt>
+            <dd class="info__value">{{terms.release.text}} <span class="info__source">({{terms.release.source}})</span></dd>
+          </div>
+        </dl>
+
+        <h2 class="section__title section__title--next" id="contract-title">Работы по договору</h2>
+        <dl class="info info--paper">
+          <div class="info__row">
+            <dt class="info__label mono">Доп. неисправности</dt>
+            <dd class="info__value">{{terms.extraFaults.text}} <span class="info__source">({{terms.extraFaults.source}})</span></dd>
+          </div>
+          <div class="info__row">
+            <dt class="info__label mono">Материалы</dt>
+            <dd class="info__value">{{terms.materials.text}} <span class="info__source">({{terms.materials.source}})</span></dd>
+          </div>
+          {{#each terms.refusal}}
+          <div class="info__row">
+            <dt class="info__label mono">Договор, п.&nbsp;{{it.point}}</dt>
+            <dd class="info__value">{{it.text}}</dd>
+          </div>
+          {{/each}}
+        </dl>
+
+        <p class="section__more"><a class="btn" href="{{bookUrl}}">Записаться</a></p>
+      </div>
+    </section>
+  </main>
+
+{{> footer}}

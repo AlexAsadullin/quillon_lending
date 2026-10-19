@@ -1,0 +1,14 @@
+{
+  "slug": "shinomontazh",
+  "order": 6,
+  "title": "Шиномонтаж",
+  "heading": "Шиномонтаж",
+  "points": [
+    11
+  ],
+  "conditions": [
+    12,
+    13
+  ],
+  "cta": "Записаться на шиномонтаж"
+}

@@ -131,7 +131,99 @@
     });
   }
 
-  /* ---------- Форма «Заказать звонок» ---------- */
+  /* ---------- Запись: день и время визита ----------
+     Слоты считаются по московскому времени, где бы ни находился посетитель.
+     Это предварительная запись — занятость постов не проверяется, время подтверждает мастер. */
+
+  const TIME_ZONE = 'Europe/Moscow';
+  const MIN_LEAD_MINUTES = 60;
+
+  function moscowNow() {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date());
+    const get = (type) => Number(parts.find((part) => part.type === type).value);
+    return { year: get('year'), month: get('month'), day: get('day'), minutes: get('hour') * 60 + get('minute') };
+  }
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayLabel = new Intl.DateTimeFormat('ru-RU', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'long' });
+
+  // Часы записи в выбранный день — по режиму работы; последний слот за час до закрытия.
+  // Сегодня — только с запасом от текущего времени
+  function slotsFor(dayOffset, hours, now) {
+    const slots = [];
+    if (!hours) return slots;
+    const [open, close] = hours;
+    for (let hour = open; hour < close; hour += 1) {
+      if (dayOffset > 0 || hour * 60 >= now.minutes + MIN_LEAD_MINUTES) slots.push(`${pad(hour)}:00`);
+    }
+    return slots;
+  }
+
+  function bookingDays(daysAhead, schedule) {
+    const now = moscowNow();
+    const days = [];
+    for (let offset = 0; offset <= daysAhead; offset += 1) {
+      const date = new Date(Date.UTC(now.year, now.month - 1, now.day + offset));
+      const slots = slotsFor(offset, schedule[date.getUTCDay()], now);
+      if (slots.length) {
+        const prefix = ['Сегодня, ', 'Завтра, '][offset] || '';
+        days.push({ value: date.toISOString().slice(0, 10), label: prefix + dayLabel.format(date), slots });
+      }
+    }
+    return days;
+  }
+
+  function fillSelect(select, options, placeholder) {
+    select.replaceChildren(new Option(placeholder, ''));
+    options.forEach(({ value, label }) => select.add(new Option(label, value)));
+  }
+
+  // Возвращает функцию сброса — нужна после отправки формы
+  function initBooking(form) {
+    const dateSelect = $('[data-js="visit-date"]', form);
+    const timeSelect = $('[data-js="visit-time"]', form);
+    if (!dateSelect || !timeSelect) return () => {};
+
+    const daysAhead = Number(form.dataset.bookingDays) || 14;
+    let schedule = {};
+    try {
+      schedule = JSON.parse(form.dataset.bookingSchedule || '{}');
+    } catch {
+      console.warn('[Шестерёнка] Режим работы для записи не прочитан — выбор дня отключён.');
+    }
+    let days = [];
+
+    const syncTime = () => {
+      const day = days.find(({ value }) => value === dateSelect.value);
+      fillSelect(timeSelect, day ? day.slots.map((slot) => ({ value: slot, label: slot })) : [], 'Любое время');
+      timeSelect.disabled = !day;
+    };
+
+    const reset = () => {
+      days = bookingDays(daysAhead, schedule);
+      fillSelect(dateSelect, days, 'Любой день');
+      syncTime();
+    };
+
+    dateSelect.addEventListener('change', syncTime);
+    reset();
+    return reset;
+  }
+
+  /* ---------- Форма записи ---------- */
+
+  // Кнопка «Записаться» на услуге ведёт на /zapis/?usluga=<slug> — выбираем эту услугу в форме
+  function preselectService(form) {
+    const slug = new URLSearchParams(window.location.search).get('usluga');
+    if (!slug) return;
+    const option = Array.from(form.elements.service.options).find((o) => o.dataset.slug === slug);
+    if (!option) return;
+    option.defaultSelected = true;
+    option.selected = true;
+  }
 
   const STORAGE_KEY = 'shesterenka:lastSentAt';
 
@@ -252,7 +344,11 @@
     const submit = $('[data-js="submit"]', form);
     const status = $('[data-js="status"]', form);
     const ticketNumber = $('[data-js="ticket-number"]', form);
-    const phone = config.PHONE_DISPLAY || '';
+    // Телефон показываем, только если он есть на странице (в content/ может быть «[уточнить у владельца]»)
+    const phoneLink = $('[data-js="phone-link"]');
+    const callUs = phoneLink ? ` Позвоните нам: ${phoneLink.textContent.trim()}` : '';
+    const resetBooking = initBooking(form);
+    preselectService(form);
     const resendDelay = config.RESEND_DELAY_MS || 60000;
 
     if (ticketNumber) ticketNumber.textContent = makeTicketNumber();
@@ -295,6 +391,9 @@
         phone: `+7${phoneDigits(form.elements.phone.value)}`,
         car: form.elements.car.value.trim(),
         problem: form.elements.problem.value.trim(),
+        service: form.elements.service.value,
+        visitDate: form.elements.visitDate.value,
+        visitTime: form.elements.visitTime.value,
         consent: true,
         page: window.location.href,
         sentAt: new Date().toISOString(),
@@ -308,15 +407,16 @@
         lastSent.set(Date.now());
         form.classList.add('is-sent');
         form.reset();
-        setStatus(status, 'Заявка принята. Мастер перезвонит в течение 15 минут в рабочее время.', 'success');
+        resetBooking();
+        setStatus(status, 'Заявка принята. Перезвоним и согласуем время визита.', 'success');
       } catch (error) {
         const reason = error.message === 'not-configured'
           ? 'Онлайн-заявки временно не принимаются.'
-          : 'Не удалось отправить заявку.';
-        setStatus(status, `${reason} Позвоните нам: ${phone}`, 'error');
+          : 'Не удалось отправить заявку. Попробуйте ещё раз.';
+        setStatus(status, reason + callUs, 'error');
       } finally {
         submit.disabled = false;
-        submit.textContent = 'Жду звонка';
+        submit.textContent = 'Записаться';
       }
     });
   }

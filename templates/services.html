@@ -1,0 +1,21 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main id="main">
+{{> page-hero}}
+
+    <section class="section section--paper" aria-labelledby="services-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">{{home.services.eyebrow}}</p>
+          <h2 class="section__title" id="services-title">{{home.services.title}}</h2>
+        </header>
+{{> cards}}
+        <p class="section__more"><a class="btn btn--ghost-dark" href="{{root}}ceny/">Все цены одной таблицей</a></p>
+      </div>
+    </section>
+  </main>
+
+{{> footer}}

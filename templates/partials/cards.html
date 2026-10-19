@@ -1,0 +1,10 @@
+        <ul class="parts">
+          {{#each cards}}
+          <li class="part" data-js="reveal">
+            <h3 class="part__title"><a class="part__link" href="{{it.href}}">{{it.title}}</a></h3>
+            <ul class="price-list">{{{it.rowsHtml}}}</ul>
+            <p class="part__note">{{partsNote}}</p>
+            <a class="btn btn--ghost-dark part__btn" href="{{it.bookHref}}">Записаться<span class="visually-hidden">: {{it.title}}</span></a>
+          </li>
+          {{/each}}
+        </ul>

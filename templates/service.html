@@ -1,0 +1,49 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main id="main">
+{{> page-hero}}
+
+    <section class="section section--paper" aria-labelledby="prices-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">Прайс</p>
+          <h2 class="section__title" id="prices-title">Цены и условия</h2>
+        </header>
+
+        <div class="details">
+          <div class="details__col">
+            <h3 class="details__title">Работы</h3>
+            <ul class="price-list price-list--lg">
+              {{#each service.items}}{{> price-row}}
+              {{/each}}
+            </ul>
+          </div>
+          <div class="details__col">
+            <h3 class="details__title">Условия</h3>
+            <ul class="checklist">
+              {{#each service.conditions}}<li class="checklist__item">{{it.text}} <span class="info__source">(п.&nbsp;{{it.point}})</span></li>
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+
+        <p class="note">Гарантия на работы — {{terms.guarantee.works}}, на запчасти — {{terms.guarantee.parts}} ({{terms.guarantee.source}}).</p>
+
+        <p class="section__more"><a class="btn" href="{{service.bookHref}}">{{service.cta}}</a></p>
+      </div>
+    </section>
+
+    <section class="section section--paper section--tight" aria-labelledby="more-title">
+      <div class="container">
+        <header class="section__head">
+          <h2 class="section__title" id="more-title">Другие услуги</h2>
+        </header>
+{{> cards}}
+      </div>
+    </section>
+  </main>
+
+{{> footer}}

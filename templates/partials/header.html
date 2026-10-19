@@ -1,0 +1,25 @@
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
+
+  <header class="header{{#if page.solidHeader}} header--solid{{/if}}" data-js="header">
+    <div class="header__inner container">
+      <a class="logo" href="{{homeUrl}}" aria-label="{{site.name}} — на главную">
+        <svg class="logo__gear" aria-hidden="true"><use href="#gear"/></svg>
+        <span class="logo__text">{{site.name}}</span>
+      </a>
+
+      <button class="burger" type="button" aria-expanded="false" aria-controls="site-nav" data-js="burger">
+        <span class="burger__line"></span>
+        <span class="visually-hidden">Меню</span>
+      </button>
+
+      <!-- Пункты меню — из списка PAGES в scripts/build.mjs -->
+      <nav class="nav" id="site-nav" aria-label="Основная навигация" data-js="nav">
+        {{#each menu}}<a class="nav__link" href="{{it.href}}"{{{it.currentAttr}}}>{{it.label}}</a>
+        {{/each}}
+        <a class="nav__link nav__link--book" href="{{bookUrl}}"{{{bookCurrentAttr}}}>Запись</a>
+        {{{site.phoneNav}}}
+      </nav>
+
+      <a class="btn btn--small header__cta" href="{{bookUrl}}">Записаться</a>
+    </div>
+  </header>

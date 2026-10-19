@@ -1,0 +1,114 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main id="main">
+    <!-- ПЕРВЫЙ ЭКРАН -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero__grid container">
+        <p class="hero__sheet mono">{{home.hero.eyebrow}}</p>
+
+        <h1 class="hero__title" id="hero-title">
+          Чиним то,<br>
+          что <span class="hero__accent">крутится</span>
+        </h1>
+
+        <p class="hero__lead">{{home.hero.lead}}</p>
+
+        <div class="hero__actions">
+          <a class="btn" href="{{bookUrl}}">Записаться</a>
+          <a class="btn btn--ghost" href="{{root}}ceny/">Все цены</a>
+        </div>
+
+        <dl class="specs">
+          {{#each home.hero.specs}}
+          <div class="specs__item">
+            <dt class="specs__label mono">{{it.label}}</dt>
+            <dd class="specs__value">{{it.value}} <span class="specs__source">({{it.source}})</span></dd>
+          </div>
+          {{/each}}
+        </dl>
+      </div>
+
+      <!-- Главная шестерёнка: вращается от прокрутки -->
+      <div class="hero__machine" aria-hidden="true">
+        <svg class="hero__gear hero__gear--big" data-js="scroll-gear" data-speed="0.12"><use href="#gear"/></svg>
+        <svg class="hero__gear hero__gear--small" data-js="scroll-gear" data-speed="-0.35"><use href="#gear"/></svg>
+      </div>
+    </section>
+
+    <!-- БЕГУЩАЯ СТРОКА: группы прайса, список повторён дважды для бесшовной прокрутки -->
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker__track">
+        {{#each tickerLoop}}<span>{{it}}</span><span>✦</span>{{/each}}
+      </div>
+    </div>
+
+    <!-- УСЛУГИ -->
+    <section class="section section--paper" id="services" aria-labelledby="services-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">{{home.services.eyebrow}}</p>
+          <h2 class="section__title" id="services-title">{{home.services.title}}</h2>
+        </header>
+{{> cards}}
+      </div>
+    </section>
+
+    <!-- КАК РАБОТАЕМ: зацепление шестерёнок -->
+    <section class="section section--ink" id="process" aria-labelledby="process-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">{{home.process.eyebrow}}</p>
+          <h2 class="section__title" id="process-title">{{home.process.title}}</h2>
+        </header>
+
+        <ol class="train">
+          {{#each steps}}
+          <li class="train__step" data-js="reveal">
+            <svg class="train__gear" aria-hidden="true"><use href="#gear"/></svg>
+            <span class="train__num mono">{{it.num}}</span>
+            <h3 class="train__title">{{it.title}}</h3>
+            <p class="train__text">{{it.text}}</p>
+          </li>
+          {{/each}}
+        </ol>
+      </div>
+    </section>
+
+    <!-- ГАРАНТИЯ И УСЛОВИЯ: размерные линии -->
+    <section class="section section--paper" id="guarantee" aria-labelledby="guarantee-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">{{home.guarantee.eyebrow}}</p>
+          <h2 class="section__title" id="guarantee-title">{{home.guarantee.title}}</h2>
+        </header>
+
+        <ul class="tolerances">
+          {{#each home.guarantee.items}}
+          <li class="tolerance" data-js="reveal">
+            <span class="tolerance__dim">{{it.dim}}</span>
+            <p class="tolerance__text">{{it.text}}</p>
+          </li>
+          {{/each}}
+        </ul>
+
+        <p class="section__more"><a class="btn btn--ghost-dark" href="{{root}}garantiya-i-oplata/">Гарантия и оплата</a></p>
+      </div>
+    </section>
+
+    <!-- ЧАСЫ И ЗАПИСЬ -->
+    <section class="section section--ink" id="booking" aria-labelledby="booking-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">{{home.booking.eyebrow}}</p>
+          <h2 class="section__title" id="booking-title">{{home.booking.title}}</h2>
+        </header>
+{{> info}}
+        <p class="section__more"><a class="btn" href="{{bookUrl}}">Записаться</a></p>
+      </div>
+    </section>
+  </main>
+
+{{> footer}}

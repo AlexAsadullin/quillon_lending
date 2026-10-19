@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Серверная проверка заявки: данным из браузера не доверяем,\n// клиентскую валидацию можно обойти прямым запросом к вебхуку.\nconst body = $input.first().json.body ?? {};\n\n// Убираем управляющие символы и лишние пробелы, ограничиваем длину\nconst clean = (value, max) => String(value ?? '')\n  .replace(/[\\u0000-\\u001F\\u007F]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, max);\n\nconst lead = {\n  name: clean(body.name, 60),\n  phone: clean(body.phone, 20).replace(/[^\\d+]/g, ''),\n  car: clean(body.car, 60),\n  problem: clean(body.problem, 500),\n};\n\nconst errors = [];\nif (lead.name.length < 2 || !/^[\\p{L}\\s'-]+$/u.test(lead.name)) errors.push('name');\nif (!/^\\+7\\d{10}$/.test(lead.phone)) errors.push('phone');\nif (body.consent !== true) errors.push('consent');\n\nreturn [{\n  json: {\n    ok: errors.length === 0,\n    error: errors.length ? `Некорректные поля: ${errors.join(', ')}` : '',\n    ...lead,\n    // Время сервера, а не браузера: часы клиента могут врать\n    receivedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),\n    status: 'Новая',\n  },\n}];\n"
+        "jsCode": "// Серверная проверка заявки: данным из браузера не доверяем,\n// клиентскую валидацию можно обойти прямым запросом к вебхуку.\nconst body = $input.first().json.body ?? {};\nconst TZ = 'Europe/Moscow';\n// Режим работы из регламента: день недели (0 — вс) → [открытие, закрытие]. Совпадает с content/site.json\nconst SCHEDULE = { 1: [9, 19], 2: [9, 19], 3: [9, 19], 4: [9, 19], 5: [9, 19], 6: [10, 17] };\n\n// Убираем управляющие символы и лишние пробелы, ограничиваем длину\nconst clean = (value, max) => String(value ?? '')\n  .replace(/[\\u0000-\\u001F\\u007F]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, max);\n\nconst lead = {\n  name: clean(body.name, 60),\n  phone: clean(body.phone, 20).replace(/[^\\d+]/g, ''),\n  car: clean(body.car, 60),\n  service: clean(body.service, 80),\n  problem: clean(body.problem, 500),\n};\n\nconst errors = [];\nif (lead.name.length < 2 || !/^[\\p{L}\\s'-]+$/u.test(lead.name)) errors.push('name');\nif (!/^\\+7\\d{10}$/.test(lead.phone)) errors.push('phone');\nif (body.consent !== true) errors.push('consent');\n\n// Желаемый визит: рабочий день с сегодняшнего (по Москве) и не дальше 60 дней, время — в часы работы этого дня\nconst visitDate = clean(body.visitDate, 10);\nconst visitTime = clean(body.visitTime, 5);\nlet visit = '';\nif (visitDate) {\n  const today = new Date().toLocaleDateString('en-CA', { timeZone: TZ });\n  const [y, m, d] = today.split('-').map(Number);\n  const maxDate = new Date(Date.UTC(y, m - 1, d + 60)).toISOString().slice(0, 10);\n  const parsed = /^\\d{4}-\\d{2}-\\d{2}$/.test(visitDate) ? new Date(`${visitDate}T00:00:00Z`) : null;\n  const isRealDate = parsed && !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === visitDate;\n  const hours = isRealDate ? SCHEDULE[parsed.getUTCDay()] : null; // воскресенье — выходной\n  const hour = Number(visitTime.slice(0, 2));\n  const isTimeOk = !visitTime || (/^\\d{2}:00$/.test(visitTime) && hours && hour >= hours[0] && hour < hours[1]);\n\n  if (!isRealDate || !hours || visitDate < today || visitDate > maxDate || !isTimeOk) {\n    errors.push('visit');\n  } else {\n    const [vy, vm, vd] = visitDate.split('-');\n    visit = `${vd}.${vm}.${vy}${visitTime ? ` ${visitTime}` : ', время любое'}`;\n  }\n} else if (visitTime) {\n  errors.push('visit');\n}\n\nreturn [{\n  json: {\n    ok: errors.length === 0,\n    error: errors.length ? `Некорректные поля: ${errors.join(', ')}` : '',\n    ...lead,\n    visit,\n    // Время сервера, а не браузера: часы клиента могут врать\n    receivedAt: new Date().toLocaleString('ru-RU', { timeZone: TZ }),\n    status: 'Новая',\n  },\n}];\n"
       },
       "id": "191c0089-0724-43dc-84e1-65ff0d4b3080",
       "name": "Проверка и очистка",
@@ -71,13 +71,17 @@
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "https://docs.google.com/spreadsheets/d/ВСТАВЬТЕ_ID_ТАБЛИЦЫ/edit",
-          "mode": "url"
+          "value": "1CJRFtqOanpOjTbyX-t83heDoYJaf2NBajJb0cKifzcs",
+          "mode": "list",
+          "cachedResultName": "Заявки «Шестерёнка»",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1CJRFtqOanpOjTbyX-t83heDoYJaf2NBajJb0cKifzcs/edit"
         },
         "sheetName": {
           "__rl": true,
-          "value": "Заявки",
-          "mode": "name"
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Заявки",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1CJRFtqOanpOjTbyX-t83heDoYJaf2NBajJb0cKifzcs/edit#gid=0"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -85,7 +89,9 @@
             "Имя": "={{ $json.name }}",
             "Телефон": "={{ $json.phone }}",
             "Марка": "={{ $json.car }}",
+            "Услуга": "={{ $json.service }}",
             "Что случилось": "={{ $json.problem }}",
+            "Запись": "={{ $json.visit }}",
             "Время": "={{ $json.receivedAt }}",
             "Статус": "={{ $json.status }}"
           },
@@ -119,8 +125,26 @@
               "canBeUsedToMatch": true
             },
             {
+              "id": "Услуга",
+              "displayName": "Услуга",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
               "id": "Что случилось",
               "displayName": "Что случилось",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Запись",
+              "displayName": "Запись",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -157,13 +181,20 @@
       "typeVersion": 4.5,
       "position": [
         680,
-        -100
-      ]
+        -120
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kwH4StiGANWxqu1C",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"ok\": true\n}",
+        "responseBody": "{\n  \"ok\": true\n}",
         "options": {
           "responseCode": 200
         }
@@ -173,8 +204,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        900,
-        -100
+        920,
+        -200
       ]
     },
     {
@@ -191,8 +222,73 @@
       "typeVersion": 1.1,
       "position": [
         680,
-        100
+        140
       ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: 'Не удалось записать в таблицу', detail: String($json.error?.message ?? $json.error ?? '').slice(0, 300) }) }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "e60da522-b470-414c-a7c0-979eb9755af6",
+      "name": "Ответ: сбой таблицы",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        920,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "CHAT_ID_TG",
+        "text": "={{ `Новая заявка с сайта\nИмя: ${$('Проверка и очистка').item.json.name}\nТелефон: ${$('Проверка и очистка').item.json.phone}\nУслуга: ${$('Проверка и очистка').item.json.service || '—'}\nЗапись: ${$('Проверка и очистка').item.json.visit || 'не выбрана'}\nМарка: ${$('Проверка и очистка').item.json.car || '—'}\nЧто случилось: ${$('Проверка и очистка').item.json.problem || '—'}\nПолучена: ${$('Проверка и очистка').item.json.receivedAt}` }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "1e51122a-e68e-4080-beb8-4b8c2d328bb2",
+      "name": "Сообщение в Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        -200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_TOKEN_TG",
+          "name": "BOT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "CHAT_ID_TG",
+        "text": "={{ `ЗАЯВКА НЕ ЗАПИСАНА В ТАБЛИЦУ — перезвоните вручную\nИмя: ${$('Проверка и очистка').item.json.name}\nТелефон: ${$('Проверка и очистка').item.json.phone}\nУслуга: ${$('Проверка и очистка').item.json.service || '—'}\nЗапись: ${$('Проверка и очистка').item.json.visit || 'не выбрана'}\nМарка: ${$('Проверка и очистка').item.json.car || '—'}\nЧто случилось: ${$('Проверка и очистка').item.json.problem || '—'}\nПолучена: ${$('Проверка и очистка').item.json.receivedAt}\nОшибка таблицы: ${String($('Строка в таблицу').item.json.error?.message ?? $('Строка в таблицу').item.json.error ?? '—').slice(0, 300)}` }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "d5c358ba-d17c-4c0a-bb9c-775695546a4c",
+      "name": "Тревога в Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        -40
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_TOKEN_TG",
+          "name": "BOT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -241,6 +337,35 @@
         [
           {
             "node": "Ответ: принято",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ответ: сбой таблицы",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ответ: принято": {
+      "main": [
+        [
+          {
+            "node": "Сообщение в Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ответ: сбой таблицы": {
+      "main": [
+        [
+          {
+            "node": "Тревога в Telegram",
             "type": "main",
             "index": 0
           }

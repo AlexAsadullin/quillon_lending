@@ -1,0 +1,26 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main id="main">
+{{> page-hero}}
+
+    <section class="section section--paper" aria-labelledby="faq-title">
+      <div class="container">
+        <h2 class="visually-hidden" id="faq-title">Ответы</h2>
+        <div class="faq">
+          {{#each faq}}
+          <details class="faq__item">
+            <summary class="faq__question">{{it.q}}</summary>
+            <p class="faq__answer">{{it.a}}{{#if it.source}} <span class="info__source">({{it.source}})</span>{{/if}}</p>
+          </details>
+          {{/each}}
+        </div>
+
+        <p class="section__more"><a class="btn" href="{{bookUrl}}">Записаться</a></p>
+      </div>
+    </section>
+  </main>
+
+{{> footer}}

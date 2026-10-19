@@ -1,0 +1,16 @@
+    <section class="page-hero" aria-labelledby="page-title">
+      <div class="page-hero__inner container">
+        <nav class="crumbs mono" aria-label="Навигационная цепочка">
+          <ol class="crumbs__list">
+            <li><a href="{{homeUrl}}">Главная</a></li>
+            {{#if service}}<li><a href="{{root}}uslugi/">Услуги</a></li>{{/if}}
+            <li aria-current="page">{{heroTitle}}</li>
+          </ol>
+        </nav>
+
+        <h1 class="page-hero__title" id="page-title">{{heroTitle}}</h1>
+        {{#if heroLead}}<p class="page-hero__lead">{{heroLead}}</p>{{/if}}
+      </div>
+
+      <svg class="page-hero__gear" aria-hidden="true" data-js="scroll-gear" data-speed="0.15"><use href="#gear"/></svg>
+    </section>
