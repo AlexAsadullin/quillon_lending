@@ -1,0 +1,272 @@
+{
+  "name": "Шестерёнка: заявки с сайта → Google Таблица",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shesterenka-lead",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://quillonlending.vercel.app"
+        }
+      },
+      "id": "91fc4ed4-265c-45c0-a54f-5885ebd4333f",
+      "name": "Заявка с сайта",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        112
+      ],
+      "webhookId": "61c9e87f-d4af-4324-bfe0-c57b5c41bb9b"
+    },
+    {r
+      "parameters": {
+        "jsCode": "// Серверная проверка заявки: данным из браузера не доверяем,\n// клиентскую валидацию можно обойти прямым запросом к вебхуку.\nconst body = $input.first().json.body ?? {};\n\n// Убираем управляющие символы и лишние пробелы, ограничиваем длину\nconst clean = (value, max) => String(value ?? '')\n  .replace(/[\\u0000-\\u001F\\u007F]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, max);\n\nconst lead = {\n  name: clean(body.name, 60),\n  phone: clean(body.phone, 20).replace(/[^\\d+]/g, ''),\n  car: clean(body.car, 60),\n  problem: clean(body.problem, 500),\n};\n\nconst errors = [];\nif (lead.name.length < 2 || !/^[\\p{L}\\s'-]+$/u.test(lead.name)) errors.push('name');\nif (!/^\\+7\\d{10}$/.test(lead.phone)) errors.push('phone');\nif (body.consent !== true) errors.push('consent');\n\nreturn [{\n  json: {\n    ok: errors.length === 0,\n    error: errors.length ? `Некорректные поля: ${errors.join(', ')}` : '',\n    ...lead,\n    // Время сервера, а не браузера: часы клиента могут врать\n    receivedAt: new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }),\n    status: 'Новая',\n  },\n}];\n"
+      },
+      "id": "4e509bd4-cc85-422f-8a7c-aadb01775a20",
+      "name": "Проверка и очистка",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "67338921-0939-4918-b24b-a87525612408",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cda09ffe-2864-44fa-839f-c769ce6822c3",
+      "name": "Данные корректны?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/15WfJwiUVdWEHoF3bNo-jAAPyHfy2MlY-/edit?usp=sharing&ouid=111774011381558844983&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Заявки",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Имя": "={{ $json.name }}",
+            "Телефон": "={{ $json.phone }}",
+            "Марка": "={{ $json.car }}",
+            "Что случилось": "={{ $json.problem }}",
+            "Время": "={{ $json.receivedAt }}",
+            "Статус": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Имя",
+              "displayName": "Имя",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Телефон",
+              "displayName": "Телефон",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Марка",
+              "displayName": "Марка",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Что случилось",
+              "displayName": "Что случилось",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Время",
+              "displayName": "Время",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Статус",
+              "displayName": "Статус",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "9b4551c2-f0ee-44d1-a4e6-c8f2b3a6d293",
+      "name": "Строка в таблицу",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kwH4StiGANWxqu1C",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": true\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "8542fe2b-adee-4149-b272-379158ebc77c",
+      "name": "Ответ: принято",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: $json.error }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "1010e454-a5a0-485d-a359-49f81443c3e0",
+      "name": "Ответ: ошибка",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        208
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Заявка с сайта": {
+      "main": [
+        [
+          {
+            "node": "Проверка и очистка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Проверка и очистка": {
+      "main": [
+        [
+          {
+            "node": "Данные корректны?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Данные корректны?": {
+      "main": [
+        [
+          {
+            "node": "Строка в таблицу",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ответ: ошибка",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Строка в таблицу": {
+      "main": [
+        [
+          {
+            "node": "Ответ: принято",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2ccc9333-1309-4761-877c-9b97d6e4d885",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f955df6600fa1fc85282ea47d40800e02611fefa8a0057914ac8a16710671373"
+  },
+  "nodeGroups": [],
+  "id": "NPlaSY9vGXCnvTHy",
+  "tags": []
+}
