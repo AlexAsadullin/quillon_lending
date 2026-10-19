@@ -1,0 +1,32 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main id="main">
+{{> page-hero}}
+
+    <!-- Только предложения из прайса (content/akcii_predlozheniya.json); выдуманных акций и сроков нет -->
+    <section class="section section--paper" aria-labelledby="offers-title">
+      <div class="container">
+        <header class="section__head">
+          <p class="section__sheet mono">Прайс</p>
+          <h2 class="section__title" id="offers-title">Действующие предложения</h2>
+        </header>
+
+        <ul class="tolerances">
+          {{#each promo.offers}}
+          <li class="tolerance" data-js="reveal">
+            <span class="tolerance__dim">{{it.dim}}</span>
+            <h3 class="details__title">{{it.title}}</h3>
+            <p class="tolerance__text">{{it.text}} <span class="info__source">({{it.source}})</span></p>
+            <p class="tolerance__text"><a href="{{root}}{{it.link}}">{{it.linkText}}</a></p>
+            <p class="section__more"><a class="btn" href="{{bookUrl}}?usluga={{it.book}}">Записаться</a></p>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+    </section>
+  </main>
+
+{{> footer}}

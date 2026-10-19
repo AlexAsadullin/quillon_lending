@@ -21,6 +21,7 @@ const PAGES = [
   { path: 'ceny/', template: 'prices', nav: 'Цены' },
   { path: 'garantiya-i-oplata/', template: 'terms', nav: 'Гарантия и оплата' },
   { path: 'voprosy/', template: 'faq', nav: 'Вопросы' },
+  { path: 'akcii-predlozheniya/', template: 'akcii_predlozheniya', nav: 'Акции' },
   { path: 'zapis/', template: 'booking', nav: 'Запись', cta: true },
   { path: 'privacy.html', template: 'privacy', noindex: true, solidHeader: true },
   { path: '404.html', template: '404', noindex: true, root: '/' },
@@ -362,7 +363,7 @@ function faqLd(faq) {
 const rootFor = (pagePath) => '../'.repeat(pagePath.split('/').length - 1);
 const outFile = (pagePath) => (pagePath === '' || pagePath.endsWith('/') ? `${pagePath}index.html` : pagePath);
 
-function pageSeo(page, { site, home }) {
+function pageSeo(page, { site, home, promo }) {
   if (page.service) return page.service.seo;
   const seoByTemplate = {
     index: home.seo,
@@ -371,6 +372,7 @@ function pageSeo(page, { site, home }) {
     booking: home.bookingPage.seo,
     terms: home.termsPage.seo,
     faq: home.faqPage.seo,
+    akcii_predlozheniya: promo.seo,
     privacy: { title: `Политика конфиденциальности — ${site.name}`, description: 'Порядок обработки персональных данных.' },
     404: { title: `Страница не найдена — ${site.name}`, description: 'Страница не найдена.' },
   };
@@ -378,7 +380,7 @@ function pageSeo(page, { site, home }) {
 }
 
 // Заголовок и вводный текст шапки внутренних страниц
-function heroText(page, home) {
+function heroText(page, home, promo) {
   if (page.service) return { heroTitle: page.service.heading, heroLead: home.servicePage.lead };
   const byTemplate = {
     services: home.servicesPage,
@@ -386,6 +388,7 @@ function heroText(page, home) {
     booking: home.bookingPage,
     terms: home.termsPage,
     faq: home.faqPage,
+    akcii_predlozheniya: promo,
   };
   const text = byTemplate[page.template];
   return { heroTitle: text?.title ?? '', heroLead: text?.lead ?? '' };
@@ -434,7 +437,7 @@ function pageContext(page, shared, services) {
       jsonLd,
       ...pageSeo(page, shared),
     },
-    ...heroText(page, shared.home),
+    ...heroText(page, shared.home, shared.promo),
     service: page.service ? card(page.service) : undefined,
     cards: services.filter((s) => s.slug !== page.service?.slug).map(card),
     formServices: services.map((s) => ({ title: s.title, slug: s.slug })),
@@ -470,10 +473,13 @@ async function build() {
     readJson('content/faq.json'), loadCsp(), loadTemplates('templates/partials'), loadTemplates('templates'),
     checkNoSecrets(),
   ]);
+  const rawPromo = await readJson('content/akcii_predlozheniya.json');
   const substitute = makeSubstitute(prices, rawTerms);
   const terms = substitute(rawTerms);
   const home = substitute(rawHome);
   const faq = substitute(rawFaq).items;
+  const promo = substitute(rawPromo);
+  requireFields(promo, ['seo.title', 'seo.description', 'title', 'offers'], 'content/akcii_predlozheniya.json');
   const services = (await loadServices(prices, site)).map((s) => ({
     ...s,
     // Вложенных циклов в шаблонах нет: строки цен карточки собираем заранее из общей части
@@ -481,7 +487,8 @@ async function build() {
   }));
 
   [[site, 'content/site.json'], [prices.items, 'content/prices.json'], [prices.conditions, 'content/prices.json'],
-    [home, 'content/home.json'], [terms, 'content/terms.json'], [faq, 'content/faq.json']]
+    [home, 'content/home.json'], [terms, 'content/terms.json'], [faq, 'content/faq.json'],
+    [promo, 'content/akcii_predlozheniya.json']]
     .forEach(([data, source]) => checkForbidden(data, source));
   services.forEach((s) => checkForbidden(s, `content/services/${s.slug}.json`));
 
@@ -496,6 +503,7 @@ async function build() {
     home,
     terms,
     faq,
+    promo,
     csp,
     year: new Date().getFullYear(),
     published: new Date().toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' }),

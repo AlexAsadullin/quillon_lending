@@ -882,6 +882,7 @@ textarea {
 .tolerance {
   display: grid;
   gap: var(--space-xs);
+  text-align: center;
 }
 
 /* Значение, оформленное как размерная линия чертежа: |←—— значение ——→| */

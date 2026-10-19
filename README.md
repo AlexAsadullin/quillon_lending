@@ -30,6 +30,7 @@ python3 -m http.server 8080 -d dist     # http://localhost:8080
 | `/zapis/`                | форма записи; `?usluga=<slug>` выбирает услугу    |
 | `/garantiya-i-oplata/`   | гарантия, оплата, выдача, отказ и возврат        |
 | `/voprosy/`              | вопросы и ответы со ссылками на пункты           |
+| `/akcii-predlozheniya/`  | акции и предложения: только из прайса (п. 14)    |
 | `/privacy.html`, `/404.html` | вне меню и карты, noindex                    |
 
 Меню шапки и подвала и `sitemap.xml` строятся из одного списка `PAGES` в `scripts/build.mjs`.
