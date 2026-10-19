@@ -198,7 +198,9 @@ function parseSchedule(rows, source) {
 async function loadSite() {
   const source = 'content/site.json';
   const site = await readJson(source);
-  requireFields(site, ['name', 'legalName', 'url', 'city', 'phone.display', 'address.full', 'booking.daysAhead'], source);
+  requireFields(site, ['name', 'legalName', 'url', 'city', 'phone.display', 'address.full', 'booking.daysAhead',
+    'operator.name', 'operator.inn', 'operator.ogrn', 'operator.address'], source);
+  if (site.phone.tel && !/^\+7\d{10}$/.test(site.phone.tel)) fail(`${source}: phone.tel — в формате +7XXXXXXXXXX`);
   if (site.url.endsWith('/')) fail(`${source}: url указывается без «/» в конце`);
   const schedule = parseSchedule(site.schedule, source);
 
@@ -313,8 +315,11 @@ function businessLd(site) {
     '@type': 'AutoRepair', name: site.legalName, url: `${site.url}/`, areaServed: site.city,
     openingHoursSpecification: site.hours.ld,
   };
-  if (site.phone.tel) ld.telephone = site.phone.tel;
-  if (!isPlaceholder(site.address.full)) ld.address = { '@type': 'PostalAddress', streetAddress: site.address.full };
+  // Тестовые и неизвестные данные поисковикам не отдаём: они попали бы в карточку организации
+  if (site.phone.tel && !site.phone.test) ld.telephone = site.phone.tel;
+  if (!isPlaceholder(site.address.full) && !site.address.test) {
+    ld.address = { '@type': 'PostalAddress', streetAddress: site.address.full };
+  }
   return ld;
 }
 
