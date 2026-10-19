@@ -10,7 +10,7 @@
  * на боевом домене — честно сообщает, что заявка не отправлена, и показывает телефон.
  */
 window.APP_CONFIG = Object.freeze({
-  FORM_ENDPOINT: 'https://alex12334567.app.n8n.cloud/webhook/shesterenka-lead',
+  FORM_ENDPOINT: 'https://al772838.app.n8n.cloud/webhook/shesterenka-lead',
   REQUEST_TIMEOUT_MS: 10000,
   RESEND_DELAY_MS: 60000,
 });
