@@ -391,7 +391,24 @@ function faqLd(faq) {
 const rootFor = (pagePath) => '../'.repeat(pagePath.split('/').length - 1);
 const outFile = (pagePath) => (pagePath === '' || pagePath.endsWith('/') ? `${pagePath}index.html` : pagePath);
 
-function pageSeo(page, { site, home, promo }) {
+// Поисковик обрезает title после ~60 символов; превосходные степени без подтверждения не пишем
+const TITLE_MAX = 60;
+const SEO_FORBIDDEN = /лучш|№\s*1(?!\d)/i;
+
+function checkSeo(seo, page) {
+  const source = `SEO страницы /${page.path}`;
+  if ([...seo.title].length > TITLE_MAX) fail(`${source}: title длиннее ${TITLE_MAX} символов: «${seo.title}»`);
+  [seo.title, seo.description].forEach((text) => {
+    if (SEO_FORBIDDEN.test(text)) fail(`${source}: «лучший» и «№1» запрещены: «${text}»`);
+  });
+  return seo;
+}
+
+function pageSeo(page, shared) {
+  return checkSeo(seoFor(page, shared), page);
+}
+
+function seoFor(page, { site, home, promo }) {
   if (page.service) return page.service.seo;
   const seoByTemplate = {
     index: home.seo,
