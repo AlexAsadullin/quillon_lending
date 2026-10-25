@@ -1,5 +1,5 @@
 {
-  "name": "Шестерёнка: заявки с сайта → Google Таблица",
+  "name": "Шестерёнка: заявки с сайта и из Telegram-бота → Google Таблица",
   "nodes": [
     {
       "parameters": {
@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Серверная проверка заявки: данным из браузера не доверяем,\n// клиентскую валидацию можно обойти прямым запросом к вебхуку.\nconst body = $input.first().json.body ?? {};\nconst TZ = 'Europe/Moscow';\n// Режим работы из регламента: день недели (0 — вс) → [открытие, закрытие]. Совпадает с content/site.json\nconst SCHEDULE = { 1: [9, 19], 2: [9, 19], 3: [9, 19], 4: [9, 19], 5: [9, 19], 6: [10, 17] };\n\n// Убираем управляющие символы и лишние пробелы, ограничиваем длину\nconst clean = (value, max) => String(value ?? '')\n  .replace(/[\\u0000-\\u001F\\u007F]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, max);\n\nconst lead = {\n  name: clean(body.name, 60),\n  phone: clean(body.phone, 20).replace(/[^\\d+]/g, ''),\n  car: clean(body.car, 60),\n  service: clean(body.service, 80),\n  problem: clean(body.problem, 500),\n};\n\nconst errors = [];\nif (lead.name.length < 2 || !/^[\\p{L}\\s'-]+$/u.test(lead.name)) errors.push('name');\nif (!/^\\+7\\d{10}$/.test(lead.phone)) errors.push('phone');\nif (body.consent !== true) errors.push('consent');\n\n// Желаемый визит: рабочий день с сегодняшнего (по Москве) и не дальше 60 дней, время — в часы работы этого дня\nconst visitDate = clean(body.visitDate, 10);\nconst visitTime = clean(body.visitTime, 5);\nlet visit = '';\nif (visitDate) {\n  const today = new Date().toLocaleDateString('en-CA', { timeZone: TZ });\n  const [y, m, d] = today.split('-').map(Number);\n  const maxDate = new Date(Date.UTC(y, m - 1, d + 60)).toISOString().slice(0, 10);\n  const parsed = /^\\d{4}-\\d{2}-\\d{2}$/.test(visitDate) ? new Date(`${visitDate}T00:00:00Z`) : null;\n  const isRealDate = parsed && !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === visitDate;\n  const hours = isRealDate ? SCHEDULE[parsed.getUTCDay()] : null; // воскресенье — выходной\n  const hour = Number(visitTime.slice(0, 2));\n  const isTimeOk = !visitTime || (/^\\d{2}:00$/.test(visitTime) && hours && hour >= hours[0] && hour < hours[1]);\n\n  if (!isRealDate || !hours || visitDate < today || visitDate > maxDate || !isTimeOk) {\n    errors.push('visit');\n  } else {\n    const [vy, vm, vd] = visitDate.split('-');\n    visit = `${vd}.${vm}.${vy}${visitTime ? ` ${visitTime}` : ', время любое'}`;\n  }\n} else if (visitTime) {\n  errors.push('visit');\n}\n\nconst receivedAt = new Date().toLocaleString('ru-RU', { timeZone: TZ });\n\n// Текст для Telegram собираем здесь, а не выражением в узле Telegram: так его можно проверить как обычный JS\nconst telegramText = [\n  'Новая заявка с сайта',\n  `Имя: ${lead.name}`,\n  `Телефон: ${lead.phone}`,\n  `Услуга: ${lead.service || '—'}`,\n  `Запись: ${visit || 'не выбрана'}`,\n  `Марка: ${lead.car || '—'}`,\n  `Что случилось: ${lead.problem || '—'}`,\n  `Получена: ${receivedAt}`,\n].join('\\n');\n\nreturn [{\n  json: {\n    ok: errors.length === 0,\n    error: errors.length ? `Некорректные поля: ${errors.join(', ')}` : '',\n    ...lead,\n    visit,\n    // Время сервера, а не браузера: часы клиента могут врать\n    receivedAt,\n    telegramText,\n    status: 'Новая',\n  },\n}];\n"
+        "jsCode": "// Серверная проверка заявки: данным из браузера не доверяем,\n// клиентскую валидацию можно обойти прямым запросом к вебхуку.\nconst input = $input.first().json;\nconst body = input.body ?? {};\n// Канал задаёт узел «Диалог бота» на верхнем уровне; у заявки с сайта там заголовки вебхука, а body — от браузера\nconst fromBot = input.channel === 'telegram';\nconst TZ = 'Europe/Moscow';\n// Режим работы из регламента: день недели (0 — вс) → [открытие, закрытие]. Совпадает с content/site.json\nconst SCHEDULE = { 1: [9, 19], 2: [9, 19], 3: [9, 19], 4: [9, 19], 5: [9, 19], 6: [10, 17] };\n\n// Убираем управляющие символы и лишние пробелы, ограничиваем длину\nconst clean = (value, max) => String(value ?? '')\n  .replace(/[\\u0000-\\u001F\\u007F]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, max);\n\nconst lead = {\n  name: clean(body.name, 60),\n  phone: clean(body.phone, 20).replace(/[^\\d+]/g, ''),\n  car: clean(body.car, 60),\n  service: clean(body.service, 80),\n  problem: clean(body.problem, 500),\n};\n\nconst errors = [];\nif (lead.name.length < 2 || !/^[\\p{L}\\s'-]+$/u.test(lead.name)) errors.push('name');\nif (!/^\\+7\\d{10}$/.test(lead.phone)) errors.push('phone');\nif (body.consent !== true) errors.push('consent');\n\n// Желаемый визит: рабочий день с сегодняшнего (по Москве) и не дальше 60 дней, время — в часы работы этого дня\nconst visitDate = clean(body.visitDate, 10);\nconst visitTime = clean(body.visitTime, 5);\nlet visit = '';\nif (visitDate) {\n  const today = new Date().toLocaleDateString('en-CA', { timeZone: TZ });\n  const [y, m, d] = today.split('-').map(Number);\n  const maxDate = new Date(Date.UTC(y, m - 1, d + 60)).toISOString().slice(0, 10);\n  const parsed = /^\\d{4}-\\d{2}-\\d{2}$/.test(visitDate) ? new Date(`${visitDate}T00:00:00Z`) : null;\n  const isRealDate = parsed && !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === visitDate;\n  const hours = isRealDate ? SCHEDULE[parsed.getUTCDay()] : null; // воскресенье — выходной\n  const hour = Number(visitTime.slice(0, 2));\n  const isTimeOk = !visitTime || (/^\\d{2}:00$/.test(visitTime) && hours && hour >= hours[0] && hour < hours[1]);\n\n  if (!isRealDate || !hours || visitDate < today || visitDate > maxDate || !isTimeOk) {\n    errors.push('visit');\n  } else {\n    const [vy, vm, vd] = visitDate.split('-');\n    visit = `${vd}.${vm}.${vy}${visitTime ? ` ${visitTime}` : ', время любое'}`;\n  }\n} else if (visitTime) {\n  errors.push('visit');\n}\n\nconst receivedAt = new Date().toLocaleString('ru-RU', { timeZone: TZ });\n\n// Текст для Telegram собираем здесь, а не выражением в узле Telegram: так его можно проверить как обычный JS\nconst telegramText = [\n  fromBot ? 'Новая заявка из Telegram-бота' : 'Новая заявка с сайта',\n  ...(fromBot ? [`Telegram: ${clean(body.telegram, 40) || 'без username'}`] : []),\n  `Имя: ${lead.name}`,\n  `Телефон: ${lead.phone}`,\n  `Услуга: ${lead.service || '—'}`,\n  `Запись: ${visit || 'не выбрана'}`,\n  `Марка: ${lead.car || '—'}`,\n  `Что случилось: ${lead.problem || '—'}`,\n  `Получена: ${receivedAt}`,\n].join('\\n');\n\nreturn [{\n  json: {\n    ok: errors.length === 0,\n    error: errors.length ? `Некорректные поля: ${errors.join(', ')}` : '',\n    ...lead,\n    visit,\n    // Время сервера, а не браузера: часы клиента могут врать\n    receivedAt,\n    telegramText,\n    status: 'Новая',\n    channel: fromBot ? 'telegram' : 'site',\n    chatId: fromBot ? String(input.chatId) : '',\n  },\n}];\n"
       },
       "id": "191c0089-0724-43dc-84e1-65ff0d4b3080",
       "name": "Проверка и очистка",
@@ -204,8 +204,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        920,
-        -200
+        1400,
+        -240
       ]
     },
     {
@@ -221,8 +221,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        680,
-        140
+        920,
+        200
       ]
     },
     {
@@ -238,8 +238,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        920,
-        -40
+        1400,
+        60
       ]
     },
     {
@@ -255,8 +255,8 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1160,
-        -200
+        1640,
+        -260
       ],
       "credentials": {
         "telegramApi": {
@@ -279,13 +279,648 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1160,
-        -40
+        1640,
+        60
       ],
       "credentials": {
         "telegramApi": {
           "id": "BOT_TOKEN_TG",
           "name": "BOT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "0be757ad-e5e6-4637-acd2-be21840d0e15",
+      "name": "Сообщение клиентскому боту",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -440,
+        520
+      ],
+      "webhookId": "9d9ef76c-345c-4f2a-9f66-2d1576251126",
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Диалог клиентского бота: те же поля и порядок, что в форме на /zapis/.\n// Состояние чатов — в static data воркфлоу: сохраняется только у активного воркфлоу (не в ручном тесте).\nconst SITE_URL = 'https://quillonlending.vercel.app'; // = content/site.json → url\nconst PRIVACY_URL = `${SITE_URL}/privacy.html`;\n// Названия услуг по порядку — как в content/services (title по order). Сборка сверяет списки\nconst SERVICES = [\"ТО\", \"Тормоза\", \"Ремень ГРМ\", \"Диагностика\", \"Кондиционер\", \"Шиномонтаж\"];\nconst NO_SERVICE = 'Не знаю, нужна консультация';\n// Режим работы: день недели (0 — вс) → [открытие, закрытие]. Совпадает с content/site.json и «Проверкой и очисткой»\nconst SCHEDULE = { 1: [9, 19], 2: [9, 19], 3: [9, 19], 4: [9, 19], 5: [9, 19], 6: [10, 17] };\nconst DAYS_AHEAD = 14; // = content/site.json → booking.daysAhead\nconst DATE_BUTTONS = 6;\nconst MIN_LEAD_MINUTES = 60;\nconst RATE_LIMIT_MS = 60 * 1000;\nconst SESSION_TTL_MS = 24 * 60 * 60 * 1000;\nconst TZ = 'Europe/Moscow';\n\nconst BTN = {\n  consent: 'Согласен',\n  phone: 'Отправить мой номер',\n  anyDay: 'Любой день',\n  anyTime: 'Любое время',\n  skip: 'Пропустить',\n  send: 'Отправить заявку',\n  restart: 'Начать заново',\n};\n\nconst update = $input.first().json;\nconst message = update.message;\n// Пишем только в личные чаты; служебные обновления пропускаем\nif (!message || !message.chat || message.chat.type !== 'private') return [];\n\nconst chatId = String(message.chat.id);\nconst store = $getWorkflowStaticData('global');\nstore.sessions = store.sessions || {};\nstore.lastLead = store.lastLead || {};\nconst nowMs = Date.now();\n\n// Старые незавершённые диалоги удаляем: там персональные данные, хранить их незачем\nfor (const [id, s] of Object.entries(store.sessions)) {\n  if (nowMs - s.updatedAt > SESSION_TTL_MS) delete store.sessions[id];\n}\nfor (const [id, at] of Object.entries(store.lastLead)) {\n  if (nowMs - at > RATE_LIMIT_MS) delete store.lastLead[id];\n}\n\nconst clean = (value, max) => String(value ?? '')\n  .replace(/[\\u0000-\\u001F\\u007F]+/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, max);\n\nconst text = clean(message.text, 600);\nconst pad = (n) => String(n).padStart(2, '0');\n\nfunction moscowNow() {\n  const parts = new Intl.DateTimeFormat('en-GB', {\n    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',\n    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',\n  }).formatToParts(new Date(nowMs));\n  const get = (type) => Number(parts.find((part) => part.type === type).value);\n  return { year: get('year'), month: get('month'), day: get('day'), minutes: get('hour') * 60 + get('minute') };\n}\n\nconst dayLabel = new Intl.DateTimeFormat('ru-RU', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'long' });\n\n// Те же дни и часы, что предлагает форма на сайте: последний слот за час до закрытия, сегодня — с запасом в час\nfunction bookingDays() {\n  const now = moscowNow();\n  const days = [];\n  for (let offset = 0; offset <= DAYS_AHEAD; offset += 1) {\n    const date = new Date(Date.UTC(now.year, now.month - 1, now.day + offset));\n    const hours = SCHEDULE[date.getUTCDay()];\n    const slots = [];\n    if (hours) {\n      for (let hour = hours[0]; hour < hours[1]; hour += 1) {\n        if (offset > 0 || hour * 60 >= now.minutes + MIN_LEAD_MINUTES) slots.push(`${pad(hour)}:00`);\n      }\n    }\n    if (slots.length) {\n      const prefix = ['Сегодня, ', 'Завтра, '][offset] || '';\n      days.push({ value: date.toISOString().slice(0, 10), label: prefix + dayLabel.format(date), slots });\n    }\n  }\n  return days;\n}\n\n// Номер из кнопки «Отправить мой номер» или набранный руками → +7XXXXXXXXXX\nfunction normalizePhone() {\n  const raw = message.contact ? message.contact.phone_number : text;\n  let digits = String(raw ?? '').replace(/\\D/g, '');\n  if (digits.length === 11 && /^[78]/.test(digits)) digits = digits.slice(1);\n  return /^\\d{10}$/.test(digits) ? `+7${digits}` : '';\n}\n\n// Дата, набранная руками: 05.11 или 05.11.2026\nfunction findTypedDay(days) {\n  const match = /^(\\d{1,2})[./](\\d{1,2})(?:[./](\\d{4}))?$/.exec(text);\n  if (!match) return null;\n  const [, d, m, y] = match;\n  return days.find(({ value }) => value.endsWith(`-${pad(m)}-${pad(d)}`) && (!y || value.startsWith(y))) || null;\n}\n\nconst reply = (session, body, keyboard = 'none', buttons = []) => {\n  if (session) {\n    session.updatedAt = nowMs;\n    store.sessions[chatId] = session;\n  }\n  return [{ json: { done: false, chatId, text: body, keyboard, buttons } }];\n};\n\nconst visitText = (data) => {\n  if (!data.visitDate) return 'любой день';\n  const [y, m, d] = data.visitDate.split('-');\n  return `${d}.${m}.${y}${data.visitTime ? ` ${data.visitTime}` : ', время любое'}`;\n};\n\nconst ask = {\n  consent: (s) => reply(s, [\n    'Здравствуйте! Это запись в автосервис «Шестерёнка».',\n    'Данные получает автосервис «Шестерёнка», чтобы перезвонить по заявке и записать на обслуживание.',\n    `Политика конфиденциальности: ${PRIVACY_URL}`,\n    `Нажмите «${BTN.consent}», если согласны на обработку персональных данных в соответствии с политикой конфиденциальности.`,\n  ].join('\\n\\n'), 'one', [BTN.consent]),\n  name: (s) => reply(s, 'Как к вам обращаться?'),\n  phone: (s) => reply(s, `Ваш телефон: нажмите «${BTN.phone}» или напишите номер в формате +7 XXX XXX-XX-XX.`, 'phone', [BTN.phone]),\n  service: (s) => reply(s, 'Какая услуга нужна?', 'seven', [...SERVICES, NO_SERVICE]),\n  date: (s) => {\n    const days = bookingDays();\n    const hint = 'Когда удобно приехать? Выберите день или напишите дату, например 05.11. '\n      + 'Это предварительная запись: время подтвердим по телефону.';\n    if (days.length < DATE_BUTTONS) return reply(s, hint, 'one', [BTN.anyDay]);\n    return reply(s, hint, 'seven', [...days.slice(0, DATE_BUTTONS).map(({ label }) => label), BTN.anyDay]);\n  },\n  time: (s, slots) => reply(s, `Во сколько? Можно: ${slots.join(', ')}. Напишите час, например ${Number(slots[0].slice(0, 2))}.`,\n    'one', [BTN.anyTime]),\n  car: (s) => reply(s, 'Марка и модель — например, Kia Rio 2018.', 'one', [BTN.skip]),\n  problem: (s) => reply(s, 'Что случилось — например, стучит спереди справа на кочках.', 'one', [BTN.skip]),\n  confirm: (s) => reply(s, [\n    'Проверьте заявку:',\n    `Имя: ${s.data.name}`,\n    `Телефон: ${s.data.phone}`,\n    `Услуга: ${s.data.service || NO_SERVICE}`,\n    `Когда: ${visitText(s.data)}`,\n    `Марка: ${s.data.car || '—'}`,\n    `Что случилось: ${s.data.problem || '—'}`,\n  ].join('\\n'), 'two', [BTN.send, BTN.restart]),\n};\n\nconst start = () => ask.consent({ step: 'consent', data: {} });\n\nlet session = store.sessions[chatId];\nif (!session || text === '/start' || text === BTN.restart) return start();\n\nconst steps = {\n  consent() {\n    if (text.toLowerCase() !== BTN.consent.toLowerCase()) return ask.consent(session);\n    session.data.consent = true;\n    session.step = 'name';\n    return ask.name(session);\n  },\n  name() {\n    const name = clean(text, 60);\n    if (name.length < 2 || !/^[\\p{L}\\s'-]+$/u.test(name)) {\n      return reply(session, 'Напишите имя буквами, например Иван.');\n    }\n    session.data.name = name;\n    session.step = 'phone';\n    return ask.phone(session);\n  },\n  phone() {\n    const phone = normalizePhone();\n    if (!phone) return reply(session, 'Не получилось распознать номер. Напишите его в формате +7 XXX XXX-XX-XX.', 'phone', [BTN.phone]);\n    session.data.phone = phone;\n    session.step = 'service';\n    return ask.service(session);\n  },\n  service() {\n    if (text !== NO_SERVICE && !SERVICES.includes(text)) return ask.service(session);\n    session.data.service = text === NO_SERVICE ? '' : text;\n    session.step = 'date';\n    return ask.date(session);\n  },\n  date() {\n    if (text === BTN.anyDay) {\n      session.data.visitDate = '';\n      session.data.visitTime = '';\n      session.step = 'car';\n      return ask.car(session);\n    }\n    const days = bookingDays();\n    const day = days.find(({ label }) => label === text) || findTypedDay(days);\n    if (!day) {\n      return reply(session, `На этот день записи нет. Выберите день кнопкой или напишите дату в ближайшие ${DAYS_AHEAD} дней, кроме выходных.`,\n        'one', [BTN.anyDay]);\n    }\n    session.data.visitDate = day.value;\n    session.step = 'time';\n    return ask.time(session, day.slots);\n  },\n  time() {\n    const day = bookingDays().find(({ value }) => value === session.data.visitDate);\n    if (!day) {\n      session.step = 'date';\n      return ask.date(session);\n    }\n    if (text === BTN.anyTime) {\n      session.data.visitTime = '';\n    } else {\n      const match = /^(\\d{1,2})(?:[:.]00)?$/.exec(text);\n      const slot = match ? `${pad(match[1])}:00` : '';\n      if (!day.slots.includes(slot)) return ask.time(session, day.slots);\n      session.data.visitTime = slot;\n    }\n    session.step = 'car';\n    return ask.car(session);\n  },\n  car() {\n    session.data.car = text === BTN.skip ? '' : clean(text, 60);\n    session.step = 'problem';\n    return ask.problem(session);\n  },\n  problem() {\n    session.data.problem = text === BTN.skip ? '' : clean(text, 500);\n    session.step = 'confirm';\n    return ask.confirm(session);\n  },\n  confirm() {\n    if (text !== BTN.send) return ask.confirm(session);\n    if (store.lastLead[chatId] && nowMs - store.lastLead[chatId] < RATE_LIMIT_MS) {\n      return reply(session, 'Заявка уже отправлена. Повторить можно через минуту.', 'two', [BTN.send, BTN.restart]);\n    }\n    // Пока клиент заполнял, выбранное время могло пройти\n    const { visitDate, visitTime } = session.data;\n    const day = visitDate && bookingDays().find(({ value }) => value === visitDate);\n    if (visitDate && (!day || (visitTime && !day.slots.includes(visitTime)))) {\n      session.step = 'date';\n      return reply(session, 'Выбранное время уже прошло — выберите другое.', 'one', [BTN.anyDay]);\n    }\n    delete store.sessions[chatId];\n    store.lastLead[chatId] = nowMs;\n    const username = message.from && message.from.username ? `@${message.from.username}` : '';\n    return [{\n      json: {\n        done: true,\n        // Признак канала — вне body: в заявке с сайта body задаёт браузер, а этот уровень — нет\n        channel: 'telegram',\n        chatId,\n        body: { ...session.data, visitDate: visitDate || '', visitTime: visitTime || '', telegram: username },\n      },\n    }];\n  },\n};\n\nreturn (steps[session.step] || start)();\n"
+      },
+      "id": "97cc22f3-cf89-43b5-a346-d332b2cc307c",
+      "name": "Диалог бота",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "dba996a8-2972-4045-b7bf-94965c0931a9",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "65248351-6e87-4df6-a3d9-9a4886d5992b",
+      "name": "Заявка собрана?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "3e3cf1c3-1c44-4500-ba04-c8bfe4349ba4",
+                    "leftValue": "={{ $json.keyboard }}",
+                    "rightValue": "none",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "без кнопок"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "0bd588c1-eb69-4c59-a7a7-cc4a93c4c07b",
+                    "leftValue": "={{ $json.keyboard }}",
+                    "rightValue": "one",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "одна кнопка"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "95ab30a2-6199-4305-a70c-31d71863c77f",
+                    "leftValue": "={{ $json.keyboard }}",
+                    "rightValue": "two",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "две кнопки"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "2af1fff7-0003-4b40-93fa-9881a2a11d23",
+                    "leftValue": "={{ $json.keyboard }}",
+                    "rightValue": "seven",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "семь кнопок"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "e0ede9aa-ffee-4c37-b29b-fdaa2d3edff8",
+                    "leftValue": "={{ $json.keyboard }}",
+                    "rightValue": "phone",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "кнопка телефона"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d85c875b-b5a6-4835-91e9-b6f756f38d6c",
+      "name": "Какие кнопки?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        220,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {
+          "remove_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "524b89b2-d898-4cc1-9f65-2c98cb416d6e",
+      "name": "Бот: без кнопок",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        520
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[0] }}",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "086bd5c3-81e2-4181-9532-6c8573361050",
+      "name": "Бот: одна кнопка",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        640
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[0] }}",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[1] }}",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "72a0f94b-492b-49e7-8707-ef633d489113",
+      "name": "Бот: две кнопки",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        760
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[0] }}",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "={{ $json.buttons[1] }}",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[2] }}",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "={{ $json.buttons[3] }}",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[4] }}",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "={{ $json.buttons[5] }}",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[6] }}",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "9cf41a61-563c-419b-bbe2-952658074d1c",
+      "name": "Бот: семь кнопок",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        880
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.text }}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "={{ $json.buttons[0] }}",
+                    "additionalFields": {
+                      "request_contact": true
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true,
+          "one_time_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a79b0bdd-991d-48fb-860c-06fc8f938e2a",
+      "name": "Бот: кнопка телефона",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        1000
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "be4d64f0-af43-4825-839f-69cf49290d8f",
+              "leftValue": "={{ $('Проверка и очистка').first().json.channel }}",
+              "rightValue": "site",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5011fb83-0388-470f-9166-82cab8bcd265",
+      "name": "Заявка с сайта?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "ae39cdeb-2819-41c5-a4e5-801ac9d08906",
+              "leftValue": "={{ $('Проверка и очистка').first().json.channel }}",
+              "rightValue": "site",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d75c0758-d6fa-4bf7-95b4-c3f2638ad252",
+      "name": "Сбой: заявка с сайта?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "37bc1f53-63ce-4677-be32-7887a91b644e",
+              "leftValue": "={{ $('Проверка и очистка').first().json.channel }}",
+              "rightValue": "site",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c53524e9-7ddd-4599-9d52-f9e83debf93d",
+      "name": "Ошибка: заявка с сайта?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Проверка и очистка').first().json.chatId }}",
+        "text": "Заявка принята. Это предварительная запись: время подтвердим по телефону.\n\nНовая заявка — команда /start.",
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {
+          "remove_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "950fafe4-b4fc-40bc-914e-1c65b61b6013",
+      "name": "Клиенту: заявка принята",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1640,
+        -120
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Проверка и очистка').first().json.chatId }}",
+        "text": "Заявку получили, но не смогли сохранить автоматически — мы перезвоним вам по указанному номеру.",
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {
+          "remove_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "b9e73d78-5abb-4c6b-b0ba-7fb9f80c752b",
+      "name": "Клиенту: сбой записи",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1640,
+        200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Проверка и очистка').first().json.chatId }}",
+        "text": "В заявке что-то не так — начните заново командой /start.",
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {
+          "remove_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "3c5a006d-13af-40de-944b-0d278152dffe",
+      "name": "Клиенту: ошибка в заявке",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        920,
+        360
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "BOT_CLIENT_TOKEN_TG",
+          "name": "BOT_CLIENT_TOKEN_TG"
         }
       },
       "onError": "continueRegularOutput"
@@ -325,7 +960,7 @@
         ],
         [
           {
-            "node": "Ответ: ошибка",
+            "node": "Ошибка: заявка с сайта?",
             "type": "main",
             "index": 0
           }
@@ -336,14 +971,14 @@
       "main": [
         [
           {
-            "node": "Ответ: принято",
+            "node": "Заявка с сайта?",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Ответ: сбой таблицы",
+            "node": "Сбой: заявка с сайта?",
             "type": "main",
             "index": 0
           }
@@ -366,6 +1001,149 @@
         [
           {
             "node": "Тревога в Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сообщение клиентскому боту": {
+      "main": [
+        [
+          {
+            "node": "Диалог бота",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Диалог бота": {
+      "main": [
+        [
+          {
+            "node": "Заявка собрана?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Заявка собрана?": {
+      "main": [
+        [
+          {
+            "node": "Проверка и очистка",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Какие кнопки?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Какие кнопки?": {
+      "main": [
+        [
+          {
+            "node": "Бот: без кнопок",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Бот: одна кнопка",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Бот: две кнопки",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Бот: семь кнопок",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Бот: кнопка телефона",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Заявка с сайта?": {
+      "main": [
+        [
+          {
+            "node": "Ответ: принято",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Сообщение в Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Клиенту: заявка принята",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сбой: заявка с сайта?": {
+      "main": [
+        [
+          {
+            "node": "Ответ: сбой таблицы",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Тревога в Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Клиенту: сбой записи",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ошибка: заявка с сайта?": {
+      "main": [
+        [
+          {
+            "node": "Ответ: ошибка",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Клиенту: ошибка в заявке",
             "type": "main",
             "index": 0
           }

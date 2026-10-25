@@ -307,6 +307,34 @@ async function checkNoSecrets() {
   }));
 }
 
+/* ---------- n8n: режим работы, услуги и адрес сайта зашиты в код узлов — сверяем с content/ ---------- */
+
+const WORKFLOW = 'n8n/shesterenka-leads.json';
+
+function readConst(code, name, node) {
+  const match = new RegExp(`const ${name} = (.+?);`).exec(code);
+  return match ? match[1] : fail(`${WORKFLOW}: в узле «${node}» нет константы ${name}`);
+}
+
+const scheduleFrom = (literal) => JSON.stringify(Object.fromEntries(
+  [...literal.matchAll(/(\d): \[(\d+), (\d+)\]/g)].map(([, day, open, close]) => [day, [Number(open), Number(close)]]),
+));
+
+async function checkWorkflowSync(site, services) {
+  const nodes = (await readJson(WORKFLOW)).nodes;
+  const code = (name) => nodes.find((n) => n.name === name)?.parameters.jsCode ?? fail(`${WORKFLOW}: нет узла «${name}»`);
+  const mismatch = (node, what) => fail(`${WORKFLOW}: в узле «${node}» ${what} расходится с content/ — поправьте узел в n8n и в файле`);
+
+  ['Проверка и очистка', 'Диалог бота'].forEach((node) => {
+    if (scheduleFrom(readConst(code(node), 'SCHEDULE', node)) !== site.bookingSchedule) mismatch(node, 'SCHEDULE');
+  });
+  const dialog = code('Диалог бота');
+  const titles = JSON.stringify(services.map((s) => s.title));
+  if (JSON.stringify(JSON.parse(readConst(dialog, 'SERVICES', 'Диалог бота'))) !== titles) mismatch('Диалог бота', 'SERVICES');
+  if (Number(readConst(dialog, 'DAYS_AHEAD', 'Диалог бота')) !== site.booking.daysAhead) mismatch('Диалог бота', 'DAYS_AHEAD');
+  if (readConst(dialog, 'SITE_URL', 'Диалог бота') !== `'${site.url}'`) mismatch('Диалог бота', 'SITE_URL');
+}
+
 /* ---------- Микроразметка: только подтверждённые факты ---------- */
 
 const toJsonLd = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
@@ -491,6 +519,7 @@ async function build() {
     [promo, 'content/akcii_predlozheniya.json']]
     .forEach(([data, source]) => checkForbidden(data, source));
   services.forEach((s) => checkForbidden(s, `content/services/${s.slug}.json`));
+  await checkWorkflowSync(site, services);
 
   await rm(DIST, { recursive: true, force: true });
   await Promise.all(STATIC_DIRS.map((dir) => cp(path.join(ROOT, dir), path.join(DIST, dir), {
