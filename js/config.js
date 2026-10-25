@@ -3,7 +3,8 @@
  * этот файл скачивает каждый посетитель.
  *
  * FORM_ENDPOINT — URL обработчика заявок (n8n webhook, свой бэкенд и т.п.).
- * Он принимает POST с JSON { name, phone, car, problem, service, visitDate, visitTime, consent, page, sentAt }.
+ * Он принимает POST с JSON { name, phone, car, problem, service, visitDate, visitTime, consent, source, page, sentAt }
+ * (source — utm_source из ссылки, без метки — web).
  * После указания адреса добавьте его домен в CSP `connect-src` в vercel.json —
  * сборка (scripts/build.mjs) проверит это и подставит политику во все страницы.
  * Пока адрес пустой: на localhost форма работает в демо-режиме,

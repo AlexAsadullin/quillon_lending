@@ -100,6 +100,33 @@
     if (year) year.textContent = String(new Date().getFullYear());
   }
 
+  /* ---------- Источник заявки: utm_source из ссылки ---------- */
+
+  // Метку запоминаем на сессию: клиент приходит по рекламе на главную, а заявку оставляет на /zapis/
+  const UTM_KEY = 'shesterenka:utmSource';
+  const DEFAULT_SOURCE = 'web';
+  const cleanSource = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '').slice(0, 40);
+
+  function initUtm() {
+    const source = cleanSource(new URLSearchParams(window.location.search).get('utm_source'));
+    if (!source) return;
+    try {
+      window.sessionStorage.setItem(UTM_KEY, source);
+    } catch {
+      /* хранилище недоступно — метка учтётся, только если заявку оставят на этой же странице */
+    }
+  }
+
+  function leadSource() {
+    const fromUrl = cleanSource(new URLSearchParams(window.location.search).get('utm_source'));
+    if (fromUrl) return fromUrl;
+    try {
+      return cleanSource(window.sessionStorage.getItem(UTM_KEY)) || DEFAULT_SOURCE;
+    } catch {
+      return DEFAULT_SOURCE;
+    }
+  }
+
   /* ---------- Телефон: маска и проверка ---------- */
 
   // Возвращает 10 цифр номера без кода страны (+7 / 8)
@@ -395,6 +422,7 @@
         visitDate: form.elements.visitDate.value,
         visitTime: form.elements.visitTime.value,
         consent: true,
+        source: leadSource(),
         page: window.location.href,
         sentAt: new Date().toISOString(),
       };
@@ -426,6 +454,7 @@
   initScrollGears();
   initReveal();
   initYear();
+  initUtm();
   initPhoneMask();
   initCallbackForm();
 })();
