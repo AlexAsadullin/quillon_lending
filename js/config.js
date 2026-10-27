@@ -9,9 +9,13 @@
  * сборка (scripts/build.mjs) проверит это и подставит политику во все страницы.
  * Пока адрес пустой: на localhost форма работает в демо-режиме,
  * на боевом домене — честно сообщает, что заявка не отправлена, и показывает телефон.
+ *
+ * TURNSTILE_SITE_KEY — публичный ключ капчи Cloudflare Turnstile. Пусто — капчи нет, форма работает без неё.
+ * Включение по шагам — n8n/README.md, раздел «Капча»: сначала ключ здесь и домен в CSP, потом секрет в n8n.
  */
 window.APP_CONFIG = Object.freeze({
   FORM_ENDPOINT: 'https://adfdad.app.n8n.cloud/webhook/shesterenka-lead',
   REQUEST_TIMEOUT_MS: 10000,
   RESEND_DELAY_MS: 60000,
+  TURNSTILE_SITE_KEY: '',
 });

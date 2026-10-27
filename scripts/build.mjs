@@ -267,7 +267,16 @@ async function loadServices(prices, site) {
 
 /* ---------- Безопасность: CSP берём из vercel.json, чтобы политика была в одном месте ---------- */
 
-async function loadCsp() {
+// Настройки формы из js/config.js: сборке нужны адрес обработчика и ключ капчи
+async function readFormConfig() {
+  const config = await readText('js/config.js');
+  const value = (name) => config.match(new RegExp(`${name}:\\s*'([^']*)'`))?.[1] ?? '';
+  return { endpoint: value('FORM_ENDPOINT'), turnstileKey: value('TURNSTILE_SITE_KEY') };
+}
+
+const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+
+async function loadCsp(form) {
   const vercel = await readJson('vercel.json');
   const header = vercel.headers
     ?.flatMap((rule) => rule.headers)
@@ -278,14 +287,20 @@ async function loadCsp() {
   const meta = header.value.split(';').map((d) => d.trim())
     .filter((d) => d && !d.startsWith('frame-ancestors')).join('; ');
 
-  const config = await readText('js/config.js');
-  const endpoint = config.match(/FORM_ENDPOINT:\s*'([^']*)'/)?.[1];
-  if (endpoint) {
-    const { origin } = new URL(endpoint);
-    const connect = meta.split('; ').find((d) => d.startsWith('connect-src')) || '';
-    if (!connect.split(' ').includes(origin)) {
+  const directive = (name) => (meta.split('; ').find((d) => d.startsWith(`${name} `)) || '').split(' ');
+  if (form.endpoint) {
+    const { origin } = new URL(form.endpoint);
+    if (!directive('connect-src').includes(origin)) {
       fail(`vercel.json: домен обработчика формы ${origin} не добавлен в CSP connect-src`);
     }
+  }
+  // Капча грузит скрипт и iframe с домена Cloudflare — без него в CSP виджет молча не появится
+  if (form.turnstileKey) {
+    ['script-src', 'frame-src'].forEach((name) => {
+      if (!directive(name).includes(TURNSTILE_ORIGIN)) {
+        fail(`vercel.json: задан TURNSTILE_SITE_KEY, а ${TURNSTILE_ORIGIN} нет в CSP ${name}`);
+      }
+    });
   }
   return meta;
 }
@@ -320,7 +335,7 @@ const scheduleFrom = (literal) => JSON.stringify(Object.fromEntries(
   [...literal.matchAll(/(\d): \[(\d+), (\d+)\]/g)].map(([, day, open, close]) => [day, [Number(open), Number(close)]]),
 ));
 
-async function checkWorkflowSync(site, services) {
+async function checkWorkflowSync(site, services, form) {
   const nodes = (await readJson(WORKFLOW)).nodes;
   const code = (name) => nodes.find((n) => n.name === name)?.parameters.jsCode ?? fail(`${WORKFLOW}: нет узла «${name}»`);
   const mismatch = (node, what) => fail(`${WORKFLOW}: в узле «${node}» ${what} расходится с content/ — поправьте узел в n8n и в файле`);
@@ -333,6 +348,10 @@ async function checkWorkflowSync(site, services) {
   if (JSON.stringify(JSON.parse(readConst(dialog, 'SERVICES', 'Диалог бота'))) !== titles) mismatch('Диалог бота', 'SERVICES');
   if (Number(readConst(dialog, 'DAYS_AHEAD', 'Диалог бота')) !== site.booking.daysAhead) mismatch('Диалог бота', 'DAYS_AHEAD');
   if (readConst(dialog, 'SITE_URL', 'Диалог бота') !== `'${site.url}'`) mismatch('Диалог бота', 'SITE_URL');
+  // n8n требует капчу, а сайт её не показывает — все заявки с сайта будут отклонены
+  if (readConst(code('Проверка и очистка'), 'CAPTCHA_REQUIRED', 'Проверка и очистка') === 'true' && !form.turnstileKey) {
+    fail(`${WORKFLOW}: CAPTCHA_REQUIRED = true, а TURNSTILE_SITE_KEY в js/config.js пустой — заявки с сайта не пройдут`);
+  }
 }
 
 /* ---------- Микроразметка: только подтверждённые факты ---------- */
@@ -513,9 +532,10 @@ function sitemap(site, pages) {
 const robots = (site) => `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`;
 
 async function build() {
+  const form = await readFormConfig();
   const [site, prices, rawHome, rawTerms, rawFaq, csp, partials, templates] = await Promise.all([
     loadSite(), loadPrices(), readJson('content/home.json'), readJson('content/terms.json'),
-    readJson('content/faq.json'), loadCsp(), loadTemplates('templates/partials'), loadTemplates('templates'),
+    readJson('content/faq.json'), loadCsp(form), loadTemplates('templates/partials'), loadTemplates('templates'),
     checkNoSecrets(),
   ]);
   const rawPromo = await readJson('content/akcii_predlozheniya.json');
@@ -536,7 +556,7 @@ async function build() {
     [promo, 'content/akcii_predlozheniya.json']]
     .forEach(([data, source]) => checkForbidden(data, source));
   services.forEach((s) => checkForbidden(s, `content/services/${s.slug}.json`));
-  await checkWorkflowSync(site, services);
+  await checkWorkflowSync(site, services, form);
 
   await rm(DIST, { recursive: true, force: true });
   await Promise.all(STATIC_DIRS.map((dir) => cp(path.join(ROOT, dir), path.join(DIST, dir), {
@@ -551,6 +571,8 @@ async function build() {
     faq,
     promo,
     csp,
+    // Капча включена — политика упоминает Cloudflare
+    captcha: Boolean(form.turnstileKey),
     year: new Date().getFullYear(),
     published: new Date().toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' }),
     conditions: prices.conditions,

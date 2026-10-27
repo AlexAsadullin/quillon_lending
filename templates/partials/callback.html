@@ -64,6 +64,9 @@
             <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off">
           </div>
 
+          <!-- Капча Cloudflare Turnstile: появляется, только если в js/config.js задан TURNSTILE_SITE_KEY -->
+          <div data-js="captcha" hidden></div>
+
           <p class="field__hint">{{home.form.privacy}}</p>
 
           <div class="field field--check">

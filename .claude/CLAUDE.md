@@ -153,12 +153,15 @@ dist/               — результат сборки; в git не храни�
     «Проверка и очистка» и «Диалог бота» в n8n (`SCHEDULE`), в боте ещё `SERVICES`, `DAYS_AHEAD`, `SITE_URL` —
     меняете часы, услуги или домен, меняйте и там. Сборка сверяет их с `content/` и падает при расхождении.
   - Honeypot-поле (`website`) против ботов: если заполнено — заявку не отправлять.
+  - Капча Cloudflare Turnstile: ключ `TURNSTILE_SITE_KEY` в `js/config.js` (пусто — выключена), токен проверяет n8n
+    (`CAPTCHA_REQUIRED`, узел «Проверка капчи», секрет — Credentials `TURNSTILE_SECRET`). Включение — `n8n/README.md`.
   - Ограничение частоты: не чаще одной отправки в 60 секунд с одной вкладки.
   - Ограничение длины полей (`maxlength`) и обрезка пробелов.
   - Обязательный чекбокс согласия на обработку ПДн со ссылкой на `privacy.html` (152-ФЗ).
   - Отправка — `fetch` с `POST`, `Content-Type: application/json`, таймаут через `AbortController`.
 - Внешние ссылки с `target="_blank"` — всегда `rel="noopener noreferrer"`.
-- Внешние ресурсы — только Google Fonts. Новые CDN не подключать без правки CSP и причины.
+- Внешние ресурсы — только Google Fonts и, при включённой капче, `challenges.cloudflare.com` (скрипт и iframe Turnstile).
+  Новые CDN не подключать без правки CSP и причины.
 - Не использовать `eval`, `new Function`, `document.write`, строковый `setTimeout`.
 
 ---

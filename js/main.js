@@ -127,6 +127,49 @@
     }
   }
 
+  /* ---------- Капча Cloudflare Turnstile ---------- */
+
+  // Скрипт грузим, только если задан ключ: без ключа форма работает как раньше
+  const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  const NO_CAPTCHA = { enabled: false, response: () => '', failed: () => false, reset() {} };
+
+  function initCaptcha(form) {
+    const box = $('[data-js="captcha"]', form);
+    const siteKey = config.TURNSTILE_SITE_KEY;
+    if (!box || !siteKey) return NO_CAPTCHA;
+
+    const state = { response: '', failed: false, widgetId: null };
+    const render = () => {
+      state.widgetId = window.turnstile.render(box, {
+        sitekey: siteKey,
+        language: 'ru',
+        theme: 'light',
+        callback: (response) => Object.assign(state, { response, failed: false }),
+        'expired-callback': () => { state.response = ''; },
+        'error-callback': () => Object.assign(state, { response: '', failed: true }),
+      });
+    };
+
+    box.hidden = false;
+    const script = document.createElement('script');
+    script.src = TURNSTILE_SRC;
+    script.async = true;
+    script.addEventListener('load', render);
+    script.addEventListener('error', () => { state.failed = true; });
+    document.head.append(script);
+
+    return {
+      enabled: true,
+      response: () => state.response,
+      failed: () => state.failed,
+      // Ответ капчи одноразовый: после любой отправки нужен новый
+      reset() {
+        state.response = '';
+        if (state.widgetId !== null && window.turnstile) window.turnstile.reset(state.widgetId);
+      },
+    };
+  }
+
   /* ---------- Телефон: маска и проверка ---------- */
 
   // Возвращает 10 цифр номера без кода страны (+7 / 8)
@@ -350,6 +393,8 @@
         signal: controller.signal,
         credentials: 'omit',
       });
+      // 403 — сервер не принял капчу
+      if (response.status === 403) throw new Error('captcha');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
     } finally {
       window.clearTimeout(timer);
@@ -375,6 +420,7 @@
     const phoneLink = $('[data-js="phone-link"]');
     const callUs = phoneLink ? ` Позвоните нам: ${phoneLink.textContent.trim()}` : '';
     const resetBooking = initBooking(form);
+    const captcha = initCaptcha(form);
     preselectService(form);
     const resendDelay = config.RESEND_DELAY_MS || 60000;
 
@@ -413,6 +459,14 @@
         return;
       }
 
+      if (captcha.enabled && !captcha.response()) {
+        const reason = captcha.failed()
+          ? `Проверка «я не робот» не прошла. Обновите страницу и попробуйте снова.${callUs}`
+          : 'Подтвердите, что вы не робот: отметьте проверку в форме.';
+        setStatus(status, reason, 'error');
+        return;
+      }
+
       const payload = {
         name: form.elements.name.value.trim(),
         phone: `+7${phoneDigits(form.elements.phone.value)}`,
@@ -423,6 +477,7 @@
         visitTime: form.elements.visitTime.value,
         consent: true,
         source: leadSource(),
+        captchaToken: captcha.response(),
         page: window.location.href,
         sentAt: new Date().toISOString(),
       };
@@ -438,11 +493,14 @@
         resetBooking();
         setStatus(status, 'Заявка принята. Перезвоним и согласуем время визита.', 'success');
       } catch (error) {
-        const reason = error.message === 'not-configured'
-          ? 'Онлайн-заявки временно не принимаются.'
-          : 'Не удалось отправить заявку. Попробуйте ещё раз.';
+        const reasons = {
+          'not-configured': 'Онлайн-заявки временно не принимаются.',
+          captcha: 'Проверка «я не робот» не пройдена. Отметьте поле ещё раз и отправьте заявку.',
+        };
+        const reason = reasons[error.message] || 'Не удалось отправить заявку. Попробуйте ещё раз.';
         setStatus(status, reason + callUs, 'error');
       } finally {
+        captcha.reset();
         submit.disabled = false;
         submit.textContent = 'Записаться';
       }
