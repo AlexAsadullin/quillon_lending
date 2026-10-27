@@ -129,9 +129,22 @@
 
   /* ---------- Капча Cloudflare Turnstile ---------- */
 
-  // Скрипт грузим, только если задан ключ: без ключа форма работает как раньше
+  // Скрипт грузим только там, где капча нужна: в форме — при заданном ключе, и на демо-странице
   const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   const NO_CAPTCHA = { enabled: false, response: () => '', failed: () => false, reset() {} };
+  let turnstileLoading = null;
+
+  function loadTurnstile() {
+    turnstileLoading = turnstileLoading || new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = TURNSTILE_SRC;
+      script.async = true;
+      script.addEventListener('load', () => resolve(window.turnstile));
+      script.addEventListener('error', reject);
+      document.head.append(script);
+    });
+    return turnstileLoading;
+  }
 
   function initCaptcha(form) {
     const box = $('[data-js="captcha"]', form);
@@ -139,8 +152,8 @@
     if (!box || !siteKey) return NO_CAPTCHA;
 
     const state = { response: '', failed: false, widgetId: null };
-    const render = () => {
-      state.widgetId = window.turnstile.render(box, {
+    const render = (turnstile) => {
+      state.widgetId = turnstile.render(box, {
         sitekey: siteKey,
         language: 'ru',
         theme: 'light',
@@ -151,12 +164,7 @@
     };
 
     box.hidden = false;
-    const script = document.createElement('script');
-    script.src = TURNSTILE_SRC;
-    script.async = true;
-    script.addEventListener('load', render);
-    script.addEventListener('error', () => { state.failed = true; });
-    document.head.append(script);
+    loadTurnstile().then(render).catch(() => { state.failed = true; });
 
     return {
       enabled: true,
@@ -168,6 +176,62 @@
         if (state.widgetId !== null && window.turnstile) window.turnstile.reset(state.widgetId);
       },
     };
+  }
+
+  /* ---------- Демо-страница капчи /captcha/ ---------- */
+
+  // Тестовые ключи Cloudflare: публичные, работают на любом домене, настоящей проверки не делают
+  const CAPTCHA_DEMO = {
+    interactive: {
+      siteKey: '3x00000000000000000000FF',
+      hint: 'Посетитель отмечает галочку — так проверка выглядит чаще всего.',
+    },
+    pass: {
+      siteKey: '1x00000000000000000000AA',
+      hint: 'Cloudflare узнаёт человека без действий с его стороны: виджет сразу показывает «Успешно».',
+    },
+    block: {
+      siteKey: '2x00000000000000000000AB',
+      hint: 'Cloudflare принимает посетителя за бота — так проверку увидит программа для рассылки спама.',
+    },
+  };
+
+  function initCaptchaDemo() {
+    const demo = $('[data-js="captcha-demo"]');
+    if (!demo) return;
+
+    const box = $('[data-js="captcha-widget"]', demo);
+    const hint = $('[data-js="captcha-hint"]', demo);
+    const status = $('[data-js="captcha-status"]', demo);
+    const buttons = $$('[data-js="captcha-mode"]', demo);
+    let widgetId = null;
+
+    const show = async (mode) => {
+      buttons.forEach((button) => {
+        const active = button.dataset.mode === mode;
+        button.setAttribute('aria-pressed', String(active));
+        button.classList.toggle('btn--ghost-dark', !active);
+      });
+      hint.textContent = CAPTCHA_DEMO[mode].hint;
+      setStatus(status, '', null);
+      try {
+        const turnstile = await loadTurnstile();
+        if (widgetId !== null) turnstile.remove(widgetId);
+        widgetId = turnstile.render(box, {
+          sitekey: CAPTCHA_DEMO[mode].siteKey,
+          language: 'ru',
+          theme: 'light',
+          callback: () => setStatus(status, 'Проверка пройдена — форма отправила бы заявку.', 'success'),
+          'expired-callback': () => setStatus(status, 'Время проверки вышло — её нужно пройти заново.', 'error'),
+          'error-callback': () => setStatus(status, 'Проверка не пройдена — заявка не отправится.', 'error'),
+        });
+      } catch {
+        setStatus(status, 'Не удалось загрузить капчу Cloudflare: проверьте интернет или блокировщик рекламы.', 'error');
+      }
+    };
+
+    buttons.forEach((button) => button.addEventListener('click', () => show(button.dataset.mode)));
+    show('interactive');
   }
 
   /* ---------- Телефон: маска и проверка ---------- */
@@ -515,4 +579,5 @@
   initUtm();
   initPhoneMask();
   initCallbackForm();
+  initCaptchaDemo();
 })();

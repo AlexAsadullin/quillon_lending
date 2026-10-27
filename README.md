@@ -32,6 +32,7 @@ python3 -m http.server 8080 -d dist     # http://localhost:8080
 | `/voprosy/`              | вопросы и ответы со ссылками на пункты           |
 | `/akcii-predlozheniya/`  | акции и предложения: только из прайса (п. 14)    |
 | `/privacy.html`, `/404.html` | вне меню и карты, noindex                    |
+| `/captcha/`              | демо капчи Cloudflare Turnstile на тестовых ключах; вне меню и карты, noindex |
 
 Меню шапки и подвала и `sitemap.xml` строятся из одного списка `PAGES` в `scripts/build.mjs`.
 «О нас» и «Отзывы» нет — для них нет фактов (см. `content/probely.md`).

@@ -27,15 +27,15 @@
 
 ## Капча на сайте (Cloudflare Turnstile)
 
-Сейчас **выключена**: `TURNSTILE_SITE_KEY` в `js/config.js` пустой, `CAPTCHA_REQUIRED = false` в «Проверке и очистке».
+Как выглядит — демо-страница `/captcha/` на тестовых ключах Cloudflare. В форме сейчас **выключена**: `TURNSTILE_SITE_KEY` в `js/config.js` пустой, `CAPTCHA_REQUIRED = false` в «Проверке и очистке».
 Форма работает как без капчи, ветка «Нужна капча?» → «Строка в таблицу» идёт мимо проверки. Бот капчу не проходит никогда.
 
 Включать строго в этом порядке, иначе заявки с сайта перестанут приниматься:
 
 1. Cloudflare → Turnstile → Add widget: домен сайта (`quillonlending.vercel.app`, для проверки можно добавить `localhost`),
    режим Managed. Получите два ключа: Site Key (публичный) и Secret Key.
-2. Сайт: Site Key → `TURNSTILE_SITE_KEY` в `js/config.js`; в `vercel.json` в CSP добавить `https://challenges.cloudflare.com`
-   в `script-src` и новой директивой `frame-src https://challenges.cloudflare.com`. Без этого сборка упадёт.
+2. Сайт: Site Key → `TURNSTILE_SITE_KEY` в `js/config.js`. Домен `https://challenges.cloudflare.com` в CSP (`script-src`,
+   `frame-src`) уже есть — его добавили для демо-страницы `/captcha/`; без него сборка упадёт.
    Политика конфиденциальности дополнится строкой про Cloudflare сама. Задеплоить и проверить, что виджет виден.
 3. n8n → Credentials → New → **Custom Auth**, имя `TURNSTILE_SECRET`, JSON: `{"body": {"secret": "<Secret Key>"}}`.
    Выбрать его в узле «Проверка капчи».

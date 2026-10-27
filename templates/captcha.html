@@ -1,0 +1,36 @@
+{{> head}}
+<body>
+{{> sprite}}
+{{> header}}
+
+  <main class="doc section--paper" id="main">
+    <div class="container doc__body">
+      <h1>Демонстрация капчи</h1>
+
+      <p>
+        Так выглядит проверка «я не робот» Cloudflare Turnstile, которую можно включить в форме записи.
+        Здесь она работает на тестовых ключах Cloudflare: настоящей проверки нет, заявки со страницы не отправляются.
+      </p>
+
+      <section class="captcha-demo" aria-labelledby="captcha-demo-title" data-js="captcha-demo">
+        <h2 id="captcha-demo-title">Сценарий проверки</h2>
+
+        <div class="captcha-demo__modes" role="group" aria-label="Сценарий проверки">
+          <button class="btn btn--small" type="button" aria-pressed="true"
+                  data-js="captcha-mode" data-mode="interactive">С галочкой</button>
+          <button class="btn btn--small btn--ghost-dark" type="button" aria-pressed="false"
+                  data-js="captcha-mode" data-mode="pass">Проходит сама</button>
+          <button class="btn btn--small btn--ghost-dark" type="button" aria-pressed="false"
+                  data-js="captcha-mode" data-mode="block">Отказ</button>
+        </div>
+
+        <p data-js="captcha-hint"></p>
+        <div class="captcha-demo__widget" data-js="captcha-widget"></div>
+        <div class="captcha-demo__status" role="status" aria-live="polite" data-js="captcha-status"></div>
+      </section>
+
+      <p>В <a href="{{root}}zapis/">форме записи</a> капча появится над согласием на обработку данных, когда её включат.</p>
+    </div>
+  </main>
+
+{{> footer}}

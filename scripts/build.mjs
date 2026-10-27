@@ -24,6 +24,8 @@ const PAGES = [
   { path: 'akcii-predlozheniya/', template: 'akcii_predlozheniya', nav: 'Акции' },
   { path: 'zapis/', template: 'booking', nav: 'Запись', cta: true },
   { path: 'privacy.html', template: 'privacy', noindex: true, solidHeader: true },
+  // Демонстрация капчи для показа заказчику: служебная, без меню и карты сайта
+  { path: 'captcha/', template: 'captcha', noindex: true, solidHeader: true },
   { path: '404.html', template: '404', noindex: true, root: '/' },
 ];
 
@@ -438,6 +440,7 @@ function seoFor(page, { site, home, promo }) {
     faq: home.faqPage.seo,
     akcii_predlozheniya: promo.seo,
     privacy: { title: `Политика конфиденциальности — ${site.name}`, description: 'Порядок обработки персональных данных.' },
+    captcha: { title: `Демонстрация капчи — ${site.name}`, description: 'Как выглядит проверка «я не робот» Cloudflare Turnstile.' },
     404: { title: `Страница не найдена — ${site.name}`, description: 'Страница не найдена.' },
   };
   return seoByTemplate[page.template] ?? fail(`нет title и description для шаблона ${page.template}`);
@@ -597,7 +600,7 @@ async function build() {
   await writeOut('robots.txt', robots(site));
 
   const indexed = pages.filter((p) => !p.noindex).length;
-  console.log(`Готово: ${indexed} страниц в карте сайта (+ privacy, 404), ${services.length} услуг, `
+  console.log(`Готово: ${indexed} страниц в карте сайта (+ privacy, captcha, 404), ${services.length} услуг, `
     + `${prices.items.length} работ в прайсе → dist/`);
 }
 

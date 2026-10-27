@@ -1593,6 +1593,49 @@ textarea {
   list-style: square;
 }
 
+/* ---------- Демо-страница капчи /captcha/ ---------- */
+
+.captcha-demo {
+  display: grid;
+  gap: var(--space-s);
+  margin: var(--space-l) 0;
+}
+
+.captcha-demo__modes {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* Высота виджета Turnstile — 65px: место держим заранее, чтобы текст не прыгал */
+.captcha-demo__widget {
+  min-height: 65px;
+}
+
+.captcha-demo__status {
+  padding-left: var(--space-xs);
+  border-left: 3px solid var(--c-ink);
+  font-weight: 600;
+}
+
+.captcha-demo__status:empty {
+  display: none;
+}
+
+.captcha-demo__status.is-error {
+  border-left-color: var(--c-signal);
+}
+
+@media (min-width: 768px) {
+  .captcha-demo__modes {
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+
+  .captcha-demo__modes .btn {
+    width: auto;
+  }
+}
+
 /* ---------- Уважение к настройкам «меньше движения» ---------- */
 
 @media (prefers-reduced-motion: reduce) {

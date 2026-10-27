@@ -40,7 +40,7 @@ content/            — ИСТОЧНИК ФАКТОВ (см. content/README.md):
                       не публикуется и не попадает в git (репозиторий публичный)
 content/docs/       — прочие материалы автосервиса; не публикуются и не попадают в git
 design.md           — правила вида (правило 4)
-templates/          — шаблоны: index, services, service, prices, booking, terms, faq, privacy, 404
+templates/          — шаблоны: index, services, service, prices, booking, terms, faq, privacy, captcha, 404
 templates/partials/ — общие части: head, sprite, header, footer, page-hero, cards, price-row, info,
                       callback (форма записи — только на /zapis/)
 scripts/build.mjs   — сборка: шаблоны + content → dist/, sitemap.xml, robots.txt, CSP в мета-теги
@@ -55,7 +55,7 @@ dist/               — результат сборки; в git не храни�
 ```
 
 Карта сайта (13 страниц): `/` · `/uslugi/` · 6 × `/uslugi/<slug>/` · `/ceny/` · `/zapis/` ·
-`/garantiya-i-oplata/` · `/voprosy/` · `/akcii-predlozheniya/`. Вне карты и меню: `/privacy.html`, `/404.html` (noindex).
+`/garantiya-i-oplata/` · `/voprosy/` · `/akcii-predlozheniya/`. Вне карты и меню: `/privacy.html`, `/captcha/` (демо капчи на тестовых ключах Cloudflare), `/404.html` (noindex).
 
 ## Акции и скидки
 
@@ -160,7 +160,8 @@ dist/               — результат сборки; в git не храни�
   - Обязательный чекбокс согласия на обработку ПДн со ссылкой на `privacy.html` (152-ФЗ).
   - Отправка — `fetch` с `POST`, `Content-Type: application/json`, таймаут через `AbortController`.
 - Внешние ссылки с `target="_blank"` — всегда `rel="noopener noreferrer"`.
-- Внешние ресурсы — только Google Fonts и, при включённой капче, `challenges.cloudflare.com` (скрипт и iframe Turnstile).
+- Внешние ресурсы — только Google Fonts и `challenges.cloudflare.com` (скрипт и iframe Turnstile: демо `/captcha/`
+  и капча формы, если задан ключ). На остальных страницах скрипт Cloudflare не загружается.
   Новые CDN не подключать без правки CSP и причины.
 - Не использовать `eval`, `new Function`, `document.write`, строковый `setTimeout`.
 
