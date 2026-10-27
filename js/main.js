@@ -457,8 +457,9 @@
         signal: controller.signal,
         credentials: 'omit',
       });
-      // 403 — сервер не принял капчу
+      // 403 — сервер не принял капчу, 429 — исчерпан общий лимит заявок в час
       if (response.status === 403) throw new Error('captcha');
+      if (response.status === 429) throw new Error('rate-limit');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
     } finally {
       window.clearTimeout(timer);
@@ -560,6 +561,7 @@
         const reasons = {
           'not-configured': 'Онлайн-заявки временно не принимаются.',
           captcha: 'Проверка «я не робот» не пройдена. Отметьте поле ещё раз и отправьте заявку.',
+          'rate-limit': 'Сейчас слишком много заявок. Попробуйте позже.',
         };
         const reason = reasons[error.message] || 'Не удалось отправить заявку. Попробуйте ещё раз.';
         setStatus(status, reason + callUs, 'error');

@@ -15,7 +15,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        0,
+        -660,
         0
       ],
       "webhookId": "61c9e87f-d4af-4324-bfe0-c57b5c41bb9b"
@@ -1046,6 +1046,77 @@
         1240,
         -560
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Общий лимит заявок с сайта: защита таблицы и Telegram от потока спама в обход формы.\n// Счётчик — в static data воркфлоу: работает только у активного воркфлоу (в ручном тесте каждый раз с нуля)\nconst LIMIT_PER_HOUR = 500;\nconst HOUR_MS = 60 * 60 * 1000;\n\nconst store = $getWorkflowStaticData('global');\nconst now = Date.now();\n// Скользящее окно: время принятых запросов за последний час, старые отбрасываем\nconst recent = (store.siteRequests || []).filter((at) => now - at < HOUR_MS);\nconst rateLimited = recent.length >= LIMIT_PER_HOUR;\n// Отклонённые не считаем — иначе поток спама продлевал бы блокировку бесконечно\nif (!rateLimited) recent.push(now);\nstore.siteRequests = recent;\n\n// Через сколько секунд освободится место: когда из окна выпадет самый старый запрос\nconst retryAfter = rateLimited ? Math.max(1, Math.ceil((recent[0] + HOUR_MS - now) / 1000)) : 0;\n\nreturn [{ json: { ...$input.first().json, rateLimited, retryAfter } }];\n"
+      },
+      "id": "8ba39105-3638-4aaa-b9e6-f73f4b20ea5c",
+      "name": "Лимит заявок",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "d5825ab1-e507-4db9-9fce-ab0d2cf0416e",
+              "leftValue": "={{ $json.rateLimited }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4c49f3d6-973f-42db-8d29-560f67e2898e",
+      "name": "Лимит не превышен?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"ok\": false,\n  \"error\": \"rate-limit\"\n}",
+        "options": {
+          "responseCode": 429,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Retry-After",
+                "value": "={{ String($json.retryAfter) }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c735cbae-71e2-4aff-aeab-66fa019103c5",
+      "name": "Ответ: слишком много заявок",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        160
+      ]
     }
   ],
   "connections": {
@@ -1053,7 +1124,7 @@
       "main": [
         [
           {
-            "node": "Проверка и очистка",
+            "node": "Лимит заявок",
             "type": "main",
             "index": 0
           }
@@ -1313,6 +1384,35 @@
         [
           {
             "node": "Ответ: капча не пройдена",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Лимит заявок": {
+      "main": [
+        [
+          {
+            "node": "Лимит не превышен?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Лимит не превышен?": {
+      "main": [
+        [
+          {
+            "node": "Проверка и очистка",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ответ: слишком много заявок",
             "type": "main",
             "index": 0
           }
